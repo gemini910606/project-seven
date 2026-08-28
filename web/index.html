@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PROJECT SEVEN</title>
+    <meta
+      name="description"
+      content="A compact open-world extraction shooter. Get in, hit the objective, get out before the heat catches up."
+    />
+    <meta property="og:title" content="PROJECT SEVEN" />
+    <meta
+      property="og:description"
+      content="A compact open-world extraction shooter. Get in, hit the objective, get out before the heat catches up."
+    />
+    <meta property="og:type" content="website" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <a class="wordmark" href="/">PROJECT<span>SEVEN</span></a>
+      <nav>
+        <a href="#play">Play</a>
+        <a href="#board">Leaderboard</a>
+        <a href="#devlog">Devlog</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="kicker">Vertical slice &middot; in development</p>
+        <h1>Get in. Hit the objective.<br />Get out before the heat catches up.</h1>
+        <p class="lede">
+          A compact open-world extraction shooter built in Unity. One district, one rifle, and an
+          alert level that never forgets what you did.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#play">Play in browser</a>
+          <a class="btn" href="/downloads/">Download for Windows</a>
+        </div>
+        <p class="fineprint">
+          Browser build is a cut-down slice. The download is the real thing.
+        </p>
+      </section>
+
+      <section id="play" class="panel">
+        <h2>Play</h2>
+        <div class="player-frame">
+          <p class="placeholder">
+            The WebGL build drops in at <code>/play/</code>.<br />
+            Until then this is where the canvas goes.
+          </p>
+        </div>
+      </section>
+
+      <section id="board" class="panel">
+        <h2>Leaderboard</h2>
+        <p class="panel-note">
+          Top extractions on <strong>Dockside Raid</strong>. Runs that fail the plausibility checks
+          never appear here.
+        </p>
+        <table class="board" id="board-table">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Player</th>
+              <th scope="col" class="num">Score</th>
+              <th scope="col" class="num">Time</th>
+              <th scope="col" class="num">Kills</th>
+            </tr>
+          </thead>
+          <tbody id="board-body">
+            <tr class="board-status">
+              <td colspan="5">Loading&hellip;</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="devlog" class="panel">
+        <h2>Devlog</h2>
+        <p class="panel-note">
+          Built in the open. Progress notes, mistakes, and the occasional thing that actually
+          worked.
+        </p>
+        <ul class="devlog-list">
+          <li>
+            <span class="date">Entry 001</span>
+            <span class="title">Greyboxing the dock district</span>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Built with Unity. Backend on Cloudflare Workers.
+        <a href="mailto:hello@example.com">hello@example.com</a>
+      </p>
+      <p class="disclaimer">
+        Not affiliated with, endorsed by, or connected to Rockstar Games or the Grand Theft Auto
+        series.
+      </p>
+    </footer>
+
+    <script>
+      // Point this at your Worker. Same-origin `/api/*` is proxied by _redirects,
+      // which avoids a CORS preflight on every leaderboard load.
+      const API_BASE = '/api/v1'
+      const MISSION_ID = 'dockside-raid'
+
+      function formatDuration(ms) {
+        const total = Math.round(ms / 1000)
+        const minutes = Math.floor(total / 60)
+        const seconds = total % 60
+        return `${minutes}:${String(seconds).padStart(2, '0')}`
+      }
+
+      function setStatus(message) {
+        document.getElementById('board-body').innerHTML =
+          `<tr class="board-status"><td colspan="5">${message}</td></tr>`
+      }
+
+      async function loadLeaderboard() {
+        try {
+          const res = await fetch(`${API_BASE}/leaderboard/${MISSION_ID}?limit=10`)
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const data = await res.json()
+
+          if (!data.entries || data.entries.length === 0) {
+            setStatus('No runs yet. Be the first.')
+            return
+          }
+
+          const body = document.getElementById('board-body')
+          body.replaceChildren()
+          for (const entry of data.entries) {
+            const row = document.createElement('tr')
+            // textContent throughout: display names are player-supplied and
+            // must never be parsed as markup.
+            const cells = [
+              String(entry.rank),
+              entry.playerName,
+              entry.score.toLocaleString(),
+              formatDuration(entry.durationMs),
+              String(entry.kills),
+            ]
+            cells.forEach((value, i) => {
+              const cell = document.createElement('td')
+              cell.textContent = value
+              if (i >= 2) cell.className = 'num'
+              row.appendChild(cell)
+            })
+            body.appendChild(row)
+          }
+        } catch (err) {
+          setStatus('Leaderboard is offline right now.')
+          console.error(err)
+        }
+      }
+
+      loadLeaderboard()
+    </script>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+# Cloudflare Pages headers.
+#
+# THE UNITY WEBGL GOTCHA, WRITTEN DOWN SO YOU ONLY LOSE AN EVENING TO IT ONCE:
+# Unity ships its WebGL build pre-compressed as .br (Brotli) or .gz (gzip) and
+# expects the server to hand those bytes over with a Content-Encoding header so
+# the browser inflates them. Cloudflare Pages will not infer that from the file
+# extension. Without the rules below the browser downloads a Brotli blob, tries
+# to parse it as WebAssembly, and you get "Unable to parse Build/x.wasm" or a
+# silent black canvas.
+#
+# In Unity: Project Settings > Player > WebGL > Publishing Settings
+#   Compression Format:      Brotli
+#   Decompression Fallback:  off  (leave on only if you must serve from a host
+#                                  you cannot set headers on - it costs ~100KB
+#                                  of JS and a slower load)
+
+/Build/*.br
+  Content-Encoding: br
+  Cache-Control: public, max-age=31536000, immutable
+
+/Build/*.wasm.br
+  Content-Type: application/wasm
+  Content-Encoding: br
+
+/Build/*.js.br
+  Content-Type: application/javascript
+  Content-Encoding: br
+
+/Build/*.data.br
+  Content-Type: application/octet-stream
+  Content-Encoding: br
+
+/Build/*.gz
+  Content-Encoding: gzip
+  Cache-Control: public, max-age=31536000, immutable
+
+/Build/*.wasm.gz
+  Content-Type: application/wasm
+  Content-Encoding: gzip
+
+/Build/*.js.gz
+  Content-Type: application/javascript
+  Content-Encoding: gzip
+
+/Build/*.data.gz
+  Content-Type: application/octet-stream
+  Content-Encoding: gzip
+
+# Unity 6 can use SharedArrayBuffer for threaded builds, which browsers only
+# expose to cross-origin-isolated pages. Harmless if you never enable threads.
+/play/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+
+# Baseline hardening for the rest of the site.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
