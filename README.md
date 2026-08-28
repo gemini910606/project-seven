@@ -9,15 +9,42 @@ you did.
 
 ---
 
+## Read this before you trust any of the C#
+
+**None of the 4,850 lines of C# in `unity/` has ever been compiled by Unity.**
+
+There are no `.meta` files anywhere under `unity/Assets`, which is proof that no
+editor has ever imported this project. The code was written without an editor
+present, structurally checked, and committed. It is a *starting point that is
+probably close*, not working code.
+
+`backend/` is different — it genuinely typechecks and its 36 tests genuinely
+pass, because that toolchain runs without Unity.
+
+**So Day 0 is a compile gate, and it is allowed to fail:**
+
+1. Open the project (see [`docs/SETUP.md`](docs/SETUP.md) — use the **URP
+   template**, not "add from disk", or everything renders magenta).
+2. Read the Console. Fix what does not compile.
+3. **Delete anything you do not understand or do not need yet.** Inheriting
+   4,850 lines of never-run code you did not write can easily be slower than
+   writing 800 lines you do understand. `WorldStreamer`, `SaveSystem` and
+   `LobbyRoom` are all fair game — nothing in v1 needs them.
+
 ## Start here
 
 **[`SCOPE.md`](SCOPE.md)** — what v1 is, and the arithmetic on why it is not GTA.
 **[`docs/ROADMAP.md`](docs/ROADMAP.md)** — sixteen weeks, with a day-by-day first week.
 
-If you read nothing else, read the "uncomfortable note" at the bottom of
-`SCOPE.md`. This repository currently contains a lot of well-built systems and
-**zero playable scenes**. The next thing to do is open Unity and make a capsule
-move on a floor — not write more code.
+This repository contains a lot of systems and **zero playable scenes**. After the
+compile gate, the next thing to do is make a capsule move on a floor — not write
+more code.
+
+> **On the repo name.** This repository is public and called `GTA7`. "GTA" is a
+> Take-Two trademark and they enforce it aggressively and indiscriminately. The
+> genre is completely free — copyright does not protect mechanics — but the name
+> is not. Rename the repo, the folder, the domain and the build identifier to
+> **Project Seven** before this gets any attention.
 
 ---
 

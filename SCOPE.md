@@ -83,17 +83,30 @@ The full list is in [`LATER.md`](LATER.md). The headlines:
 
 ## The uncomfortable note about this repository
 
-At the time of writing, `unity/Assets/Game/Scripts` contains roughly **1,100
-lines of C# and there is not one `.unity` scene, `.prefab` or `.asset` file in
-the repo.** There is a Durable Object lobby, a D1 schema, an HMAC anti-cheat
-scheme and a landing page — all serving a game that cannot currently be played.
+`unity/Assets/Game/Scripts` contains **4,850 lines of C# across 44 files, and
+there is not one `.unity` scene, `.prefab` or `.asset` file in the repo.** There
+is a Durable Object lobby, a D1 schema, an HMAC anti-cheat scheme and a landing
+page — all serving a game that cannot currently be played.
 
-That is textbook **systems-before-game-loop**, and it is worth naming rather
-than glossing over. The code is a genuine head start and the design in it is
-sound, but it is not progress in the only sense that counts.
+Worse: **there are no `.meta` files under `unity/Assets`**, which is proof that
+no Unity editor has ever imported this project. **None of those 4,850 lines has
+ever been compiled.** The `backend/` half is real — it typechecks and its tests
+pass, because that toolchain does not need Unity. The game half is a starting
+point that is probably close, not working code.
 
-**The next thing to do is not to write more code.** It is to open Unity and make
-a capsule move on a ProBuilder floor.
+That is textbook **systems-before-game-loop**, plus multiplayer-before-
+single-player, plus website-before-game. It is worth naming rather than glossing
+over. The design in the code is sound and it is a genuine head start, but it is
+not progress in the only sense that counts.
+
+**So treat the scaffold as a maybe-asset, not a proven one.** Day 0 is a compile
+gate followed by a deletion pass: open it, fix what does not build, and delete
+anything you do not understand or do not need for v1 — `WorldStreamer`,
+`SaveSystem` and `LobbyRoom` all qualify. Inheriting 4,850 lines of never-run
+code you did not write can easily be slower than writing 800 you do understand.
+
+**Then the next thing is not to write more code.** It is to make a capsule move
+on a ProBuilder floor.
 
 Track one number weekly: **how many minutes of the game can a stranger play?**
 

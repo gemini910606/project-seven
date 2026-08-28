@@ -18,17 +18,58 @@ leaderboard.
 - **Git LFS** (`git lfs install`) — the repo's `.gitattributes` routes binary art
   through it.
 
-### First open
+### First open — do NOT use "Add project from disk"
 
-1. Unity Hub → **Add project from disk** → select the `unity/` folder.
-2. Let it import. The first import compiles every package and takes a while;
-   subsequent opens are fast.
-3. If Package Manager reports a version it cannot resolve, click **Resolve** or
-   pick the nearest available patch. `Packages/manifest.json` pins the versions
-   listed in the 6000.3 manual, but patch numbers move.
-4. Run **Game → Bootstrap Project** from the menu bar. This creates the tags,
+`unity/ProjectSettings/` contains exactly one file, `ProjectVersion.txt`. There
+is no `GraphicsSettings.asset`, which means **URP is in the package manifest but
+is not the active render pipeline**. Opening this folder directly gives you a
+project where every material renders magenta, and you will spend an hour finding
+out why.
+
+Create the project from Unity's own URP template instead, then move this repo's
+code into it:
+
+1. Unity Hub → **New project** → **Universal 3D** template → Unity **6000.3.x**.
+   Name it `unity`, create it somewhere temporary.
+2. From that new project, copy into this repo's `unity/` folder:
+   - the whole `ProjectSettings/` folder (this is the part that matters — it
+     carries `GraphicsSettings.asset` with URP wired up, plus quality settings),
+   - `Assets/Settings/` (the URP asset and renderer),
+   - `Packages/packages-lock.json`.
+3. Merge this repo's `Packages/manifest.json` into the template's — or just add
+   the extra packages through Package Manager: **Cinemachine, Input System,
+   AI Navigation, Animation Rigging, ProBuilder**. (Skip Addressables; nothing in
+   v1 uses it. ProBuilder you need on day one, for greyboxing.)
+4. Open `unity/`. Let it import. The first import takes a while.
+5. **Read the Console.** See the compile gate below.
+6. Run **Game → Bootstrap Project** from the menu bar. This creates the tags,
    layers and collision-matrix entries the scripts expect. It is safe to run
    repeatedly and it tells you what it changed.
+
+> **Input System note:** when Unity asks whether to enable the new Input System
+> backend, say yes and let it restart. `PlayerInputReader` builds its actions in
+> code and will not work under the old backend.
+
+### The compile gate
+
+**None of the C# in this repo has ever been compiled by Unity.** There are no
+`.meta` files under `unity/Assets`, which is the proof. It was written without an
+editor available, structurally checked, and committed.
+
+Expect errors on first import, and treat that as normal rather than as a
+disaster. The likely categories:
+
+- **Package API drift** — `CinemachineCamera.Priority` and the
+  `Unity.Cinemachine` namespace are Cinemachine 3.x; if Package Manager resolved
+  a different major version, these move.
+- **Missing packages** — anything referenced in `Game.Runtime.asmdef` that did
+  not install will fail the whole assembly, not just one file.
+- **Ordinary mistakes** in code nobody has run.
+
+Then do the deletion pass. Nothing in v1 needs `WorldStreamer`, `SaveSystem`,
+`LobbyRoom`, or `Addressables`. **Delete what you do not understand.** Code you
+cannot explain costs about five times as much to debug later, and 800 lines you
+wrote beats 4,850 you inherited.
 
 ### Wire up a playable scene
 
