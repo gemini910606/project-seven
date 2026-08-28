@@ -68,7 +68,23 @@ takes a while.
 
 **7. Run `Game > Bootstrap Project`** from the menu bar once it compiles. It
 creates the tags, layers and collision-matrix entries the scripts expect, is safe
-to run repeatedly, and tells you what it changed.
+to run repeatedly, and pops a dialog saying what it changed.
+
+That the `Game` menu exists at all is the compile gate's pass signal: Unity only
+registers a `[MenuItem]` from an assembly that compiled, `Game.Editor` references
+`Game.Runtime`, and an assembly whose reference failed to build does not compile.
+So the menu appearing means every runtime script compiled and every assembly name
+in the asmdef resolved.
+
+It also runs headless, which is the fastest way to re-run it after a code change:
+
+```
+"<editor>\Unity.exe" -batchmode -quit -logFile - ^
+  -projectPath "<repo>\unity" ^
+  -executeMethod Game.EditorTools.ProjectBootstrap.Bootstrap
+```
+
+Only one process can hold the project lock, so close the editor first.
 
 > **Input System note:** when Unity asks whether to enable the new Input System
 > backend, say yes and let it restart. `PlayerInputReader` builds its actions in
@@ -90,6 +106,20 @@ Safe Mode skips asset import and gives you the Console and a script editor, so a
 fix-and-recompile cycle is seconds instead of minutes; Unity leaves it by itself
 once the error count reaches zero. Choosing *Ignore* imports every asset on top
 of a broken compile state and buries the real errors under cascading ones.
+
+**Get every error at once instead of one screenshot at a time.** Unity writes
+the whole compile log to `Editor.log`, so one command beats scrolling the
+Console:
+
+```powershell
+# PowerShell
+Get-Content "$env:LOCALAPPDATA\Unity\Editor\Editor.log" |
+  Select-String "error CS" |
+  ForEach-Object { $_.Line.Trim() } | Sort-Object -Unique
+```
+
+Deduplicated, in file order, paste-able. On macOS the file is
+`~/Library/Logs/Unity/Editor.log`.
 
 Work the errors in this order:
 
@@ -169,6 +199,19 @@ And one thing that looks alarming and is not:
 Then do the deletion pass. **Delete what you do not understand.** Code you
 cannot explain costs about five times as much to debug later, and 800 lines you
 wrote beat 4,000 you inherited.
+
+> **One trap in that pass.** Deleting a package from `Packages/manifest.json`
+> while `Game.Runtime.asmdef` still names its assembly kills the *entire*
+> assembly — all 29 runtime scripts at once, with an error that names the
+> assembly rather than anything you touched. `Game.Runtime.asmdef` therefore
+> lists only assemblies some file actually has a `using` for. If you delete a
+> package, delete its line from the asmdef in the same commit.
+>
+> Note that `UnityEngine.AI` — `NavMeshAgent`, `NavMesh.SamplePosition` — is
+> core engine (`com.unity.modules.ai`), *not* the `com.unity.ai.navigation`
+> package. Keep that package anyway: it provides the `NavMeshSurface` component
+> you need in the scene to bake, which is why it is in the manifest without
+> being in the asmdef.
 
 ### Wire up a playable scene
 

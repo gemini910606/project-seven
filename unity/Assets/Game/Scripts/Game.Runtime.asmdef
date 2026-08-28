@@ -4,11 +4,6 @@
   "references": [
     "Game.Rules",
     "Unity.InputSystem",
-    "Unity.Cinemachine",
-    "Unity.AI.Navigation",
-    "Unity.Animation.Rigging",
-    "Unity.TextMeshPro",
-    "Unity.RenderPipelines.Universal.Runtime",
     "Unity.Netcode.Runtime",
     "Unity.Services.Multiplayer",
     "Unity.Services.Core",

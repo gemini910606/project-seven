@@ -58,10 +58,16 @@ namespace Game.EditorTools
             // moment anyone filters the Console down to errors, which is exactly
             // what you do while working through compile errors. Silence then reads
             // as "the menu item is broken".
-            EditorUtility.DisplayDialog(
-                "Bootstrap Project",
-                summary + "\n\nSafe to run again at any time.",
-                "OK");
+            // Guarded: DisplayDialog has nothing to draw under -batchmode, which is
+            // how this runs from the command line (-executeMethod). The log below is
+            // the batch-mode output, so nothing is lost.
+            if (!Application.isBatchMode)
+            {
+                EditorUtility.DisplayDialog(
+                    "Bootstrap Project",
+                    summary + "\n\nSafe to run again at any time.",
+                    "OK");
+            }
 
             Debug.Log(
                 $"Project bootstrap complete. Added {tagsAdded} tag(s) and {layersAdded} layer(s), " +
