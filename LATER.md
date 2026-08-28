@@ -24,6 +24,7 @@ not v1. Nothing moves to `SCOPE.md` until v1 has shipped.**
 | Anti-cheat | The host runs the simulation. There is no defence, and among friends no need. |
 | Accounts, ranked, matchmaking | You know everyone playing. |
 | Spectator mode | Genuinely nice, genuinely not a v1 feature. |
+| Carrying the spike | v1 lets any attacker standing on a site plant, and the spike appears where they stood. A real carrier needs pickup, drop-on-death, a visible model on someone's back and an indicator for the other four. `Spike.AdvanceInteraction` says where the shortcut is. |
 | Replays / demos | Requires deterministic simulation or a full state log. Large. |
 | Voice chat | Discord already does this better than you will. |
 | Custom keybinding UI | `PlayerInputReader` builds actions in code precisely so this can be swapped for an `InputActionAsset` later. |

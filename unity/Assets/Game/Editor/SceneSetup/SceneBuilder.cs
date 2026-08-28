@@ -112,6 +112,10 @@ namespace Game.EditorTools
             spikeGo.layer = LayerMask.NameToLayer("Interactable");
             Object.DestroyImmediate(spikeGo.GetComponent<BoxCollider>());
             spikeGo.AddComponent<NetworkObject>();
+            // CompletePlant moves the spike to wherever it was planted, and without
+            // this that move is server-only: clients keep seeing it at its starting
+            // position and defenders walk to the wrong place.
+            spikeGo.AddComponent<NetworkTransform>();
             Spike spike = spikeGo.AddComponent<Spike>();
             SetRefArray(spike, "sites", new Object[] { siteA, siteB });
 

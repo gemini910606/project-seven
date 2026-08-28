@@ -31,7 +31,7 @@ namespace Game.Round
         private readonly NetworkVariable<float> _progress = new();
 
         private float _serverProgress;
-        private ulong _currentActorId;
+        private GameObject _currentActor;
         private bool _hadActorThisTick;
 
         /// <summary>
@@ -69,14 +69,13 @@ namespace Game.Round
         {
             if (RoundDirector.Instance == null) return;
 
-            ulong senderId = rpcParams.Receive.SenderClientId;
-            AdvanceInteraction(senderId, FindCharacter(senderId));
+            AdvanceInteraction(FindCharacter(rpcParams.Receive.SenderClientId));
         }
 
         /// <summary>Server-side entry point for bots, which have no client id.</summary>
-        public void BotInteract(GameObject bot) => AdvanceInteraction(ulong.MaxValue, bot);
+        public void BotInteract(GameObject bot) => AdvanceInteraction(bot);
 
-        private void AdvanceInteraction(ulong actorId, GameObject actor)
+        private void AdvanceInteraction(GameObject actor)
         {
             if (!IsServer || actor == null) return;
 
@@ -84,7 +83,10 @@ namespace Game.Round
             if (director == null || director.PlayersFrozen) return;
 
             if (!actor.TryGetComponent(out TeamMember member)) return;
-            if (Vector3.Distance(actor.transform.position, transform.position) > interactRadius) return;
+
+            // A character with no team is on neither side. Asking the director
+            // throws, and this runs from an RPC every frame someone holds the key.
+            if (member.Team == MatchTeam.None) return;
 
             Side side = director.SideOf(member.Team);
 
@@ -95,12 +97,33 @@ namespace Game.Round
 
             if (!planting && !defusing) return;
 
+            // Distance to the spike object only matters once it is on the ground.
+            //
+            // Before the plant it is notionally carried - CompletePlant moves it to
+            // wherever the planter stood - so requiring proximity as well as being
+            // on a site made planting impossible: the spike starts away from both
+            // sites, and nothing in this project picks it up or moves it there.
+            //
+            // The simplification is that any attacker standing on a site can plant,
+            // rather than one nominated carrier. That is in LATER.md.
+            if (_planted.Value
+                && Vector3.Distance(actor.transform.position, transform.position) > interactRadius)
+            {
+                return;
+            }
+
             if (planting && !IsOnASite(actor.transform.position)) return;
 
             // A different character taking over restarts the bar.
-            if (actorId != _currentActorId)
+            //
+            // Identity is the GameObject, not a client id. Every bot went through
+            // BotInteract with the same sentinel id, so one bot inherited another's
+            // progress - and partial credit between two defusers is precisely what
+            // the timings at the top of this file exist to prevent. Client id 0 is
+            // also the host, which collided with the "nobody" sentinel.
+            if (actor != _currentActor)
             {
-                _currentActorId = actorId;
+                _currentActor = actor;
                 _serverProgress = 0f;
             }
 
@@ -126,7 +149,7 @@ namespace Game.Round
             {
                 _serverProgress = 0f;
                 _progress.Value = 0f;
-                _currentActorId = 0;
+                _currentActor = null;
             }
 
             _hadActorThisTick = false;
@@ -147,7 +170,7 @@ namespace Game.Round
             _planted.Value = false;
             _progress.Value = 0f;
             _serverProgress = 0f;
-            _currentActorId = 0;
+            _currentActor = null;
         }
 
         private bool IsOnASite(Vector3 position)
