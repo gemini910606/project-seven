@@ -42,9 +42,14 @@ code into it:
    Services**, **Authentication**, **Input System**, **AI Navigation**,
    **ProBuilder**. The first three are what make it a multiplayer game; the last
    one you need on day one for greyboxing.
-4. Open `unity/`. Let it import. The first import takes a while.
-5. **Read the Console.** See the compile gate below.
-6. Run **Game → Bootstrap Project** from the menu bar. This creates the tags,
+4. **Delete `Assets/TutorialInfo/` from the template.** It is the URP template's
+   welcome screen and its only script, `Readme.cs`, is in the global namespace.
+   If a copy of it survives in two places after step 2 you get
+   `CS0101: already contains a definition for 'Readme'`, which looks like a
+   problem with this project and is not. Nothing depends on it. Delete it.
+5. Open `unity/`. Let it import. The first import takes a while.
+6. **Read the Console.** See the compile gate below.
+7. Run **Game → Bootstrap Project** from the menu bar. This creates the tags,
    layers and collision-matrix entries the scripts expect. It is safe to run
    repeatedly and it tells you what it changed.
 
@@ -120,6 +125,13 @@ disaster. The likely categories:
   `SessionOptions`, `WithRelayNetwork()` and `JoinSessionByCodeAsync` are the
   calls to check first, against
   https://docs.unity.com/en-us/mps-sdk/create-session .
+
+- **Duplicate class definitions from the template.** `CS0101 already contains a
+  definition` plus `CS0579 Duplicate attribute` on the same file means that file
+  exists twice. After the template merge above, the usual culprit is
+  `Assets/TutorialInfo/Scripts/Readme.cs`. Find every copy with
+  `dir /s /b Assets\*Readme.cs` (or `find Assets -name 'Readme.cs'`) and delete
+  the whole `TutorialInfo` folder wherever it appears.
 
 - **Ordinary mistakes** in code nobody has run.
 
