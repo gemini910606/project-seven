@@ -22,8 +22,13 @@ It is a **modular industrial kitbash set** — walls, pipes, containers, railing
 props. It is a very good one, and it is roughly 9,000 favourites' worth of
 useful. But it contains no city, no streets, no drivable layout and no interiors.
 
-This is the single biggest gap between the plan and the assets, so plan around
-it rather than discovering it in week three. Three honest options:
+**For the round-based game this matters far less than it did.** The old plan
+needed a 200m x 200m open district. A tactical shooter map is one small,
+deliberate space - two bomb sites and three lanes - and a modular industrial kit
+is close to ideal raw material for exactly that. Greybox the layout in
+ProBuilder, play it for weeks, then dress it with 86679.
+
+If you still want a prebuilt city later, the honest options are:
 
 | Option | Effort | Cost | Verdict |
 |---|---|---|---|
@@ -52,6 +57,10 @@ yet.
 ### 3. Character — Fab "Apocalyptic Survivor / Assassin, Low Poly"
 
 `https://www.fab.com/listings/7b1fe6a8-89ea-491f-b59f-1d2aa48bbe79`
+
+**This dropped in importance too.** The game is first-person now, so you see
+your own character almost never - it is the *enemy* silhouette that matters, and
+what a tactical shooter needs there is readability at 40 metres, not detail.
 
 **Do not spend money resolving this one.** For a vertical slice, use
 **[Mixamo](https://www.mixamo.com/)**: free, royalty-free for commercial use,

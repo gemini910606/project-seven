@@ -1,13 +1,13 @@
 # Roadmap
 
-Sixteen weeks at **12–15 hours a week** (~200 hours). Halve the calendar if you
-work on it full-time.
+Twelve weeks at **12–15 hours a week** (~160 hours). Halve the calendar full-time.
 
-Read [`SCOPE.md`](../SCOPE.md) first. This file is how to build what that file
-describes.
+Read [`SCOPE.md`](../SCOPE.md) first. Every milestone has an **exit criterion**;
+if you cannot honestly tick it, do not start the next one.
 
-Every milestone has an **exit criterion**. If you cannot honestly tick it, do
-not start the next one.
+The ordering has one rule behind it: **get two machines talking to each other in
+week one.** Multiplayer is not a feature you add at the end. Everything built
+before the network exists gets rewritten once it does.
 
 ---
 
@@ -15,129 +15,118 @@ not start the next one.
 
 **Day 0 · 2–4 hours, and it is allowed to be ugly**
 
-None of the C# in this repo has ever been compiled by Unity — there are no
-`.meta` files, which is the proof. Before anything else:
+None of the Unity C# here has ever been compiled — there are no `.meta` files,
+which is the proof. The round rules *have* been (see `tools/RulesTests`), but
+they are the only part.
 
 1. Create the project from Unity's **URP template** and move the code in, per
-   [`SETUP.md`](SETUP.md). Do not open `unity/` directly; there is no
-   `GraphicsSettings.asset` and everything will render magenta.
-2. Fix whatever does not compile. Expect package API drift and ordinary
-   mistakes in code nobody has run.
-3. **Delete what you do not need for v1.** `WorldStreamer`, `SaveSystem`,
-   `LobbyRoom`, Addressables. All of it. Fewer moving parts you understand beats
-   more you inherited.
+   [`SETUP.md`](SETUP.md). Do not open `unity/` directly.
+2. Install Netcode for GameObjects and the Multiplayer Services SDK.
+3. Fix whatever does not compile.
+4. Delete anything you do not understand. 800 lines you wrote beat 4,000 you
+   inherited.
 
-> **Exit:** the Console is clean and the EditMode tests run.
+> **Exit:** clean Console, and the EditMode tests run.
 
-## M0 — It moves and it shoots
+## M0 — Two windows, one world
 
-**Days 1–3 · ~9 hours**
+**Week 1 · ~12 hours**
 
-Create `Assets/Game/Scenes/Sandbox.unity`. A ProBuilder floor 40×40m and a dozen
-boxes for cover. A capsule with `CharacterController`, `ThirdPersonMotor` and
-`PlayerInputReader`. Cinemachine 3 follow camera plus an over-shoulder aim
-camera swapped on right mouse. A crosshair `Image` on a Canvas. Hook up a
-`Weapon` with a `WeaponDefinition` asset and raycast at a wall.
+A grey box room. A capsule with `FirstPersonMotor`, `PlayerLook`,
+`PlayerInputReader`, `NetworkPlayer`. A `NetworkManager` with the Unity
+Transport. Build once, run the build alongside the editor.
 
-> **Exit:** you can walk around a grey box room and put holes in a wall.
+Do **not** add a gun yet.
 
-## M1 — One enemy that fights back
+> **Exit:** two clients, and moving in one window moves a capsule in the other.
+> This is the single most important milestone in the project; everything after
+> it is comparatively easy.
 
-**Weeks 1–2 · ~20 hours**
+## M1 — Shooting that works over the wire
 
-Bake a NavMesh. Build the enemy prefab: `NavMeshAgent`, `EnemyLocomotion`,
-`EnemyPerception`, `EnemyBrain`, `Health`, `EnemyWeaponUser`, its own `Weapon`.
+**Week 2 · ~14 hours**
 
-Then spend **three full hours on feel and nothing else**: hitmarker, hit sound,
-impact particles, muzzle flash, camera shake, a death ragdoll or a
-fall-over animation.
+Rifle in hand. `Weapon` raises `PelletFired`, `NetworkPlayer` ships it to the
+server, `ShotResolver` traces it and applies damage. Health, death, and a body
+that stops moving on every machine.
 
-> **Exit — and this is the real gate on the whole project:** a friend plays for
-> five minutes without being asked to, and shooting one enemy is *satisfying*.
-> If it is not fun here, it will not become fun by adding a city. Fix it now or
-> stop.
+Then three hours on feel and nothing else: hitmarker, hit sound, impact
+particles, muzzle flash.
 
-## M2 — The loop closes
+> **Exit — the real gate on the project:** you and one friend shoot each other
+> across the internet and it is *satisfying*. If it is not fun here, no amount
+> of round structure will save it.
 
-**Weeks 3–4 · ~20 hours**
+## M2 — The round
 
-Objective trigger volumes (`ObjectiveZone`), an extraction zone, a run timer, a
-fail state, and a score screen driven by `MissionDirector`, `RunStats` and
-`ScoreCalculator`.
+**Weeks 3–4 · ~22 hours**
 
-The map is still ugly greybox. That is correct and intentional.
+Wire `RoundDirector` into the scene: prep freeze, round timer, spawns per side,
+one life per round, respawn at round boundaries. Then the spike: `Spike`,
+`BombSite`, plant and defuse bars.
 
-> **Exit:** a run has a beginning, a middle, an end, and a number at the end
-> that you want to beat.
+`MatchCore` already implements every rule and every edge case, tested. This
+milestone is scene wiring, not logic.
 
-## M3 — The district
+> **Exit:** a full round resolves four ways — elimination, detonation, defuse,
+> timeout — and the score is right on both machines.
 
-**Weeks 5–7 · ~35 hours**
+## M3 — Bots
 
-**Only now** import package 86679 into `Assets/ThirdParty/`. Kitbash the
-200×200m industrial district over the greybox you have already playtested.
-Re-bake the NavMesh. One URP lighting pass: baked lightmaps, a skybox, fog, one
-colour-grading volume.
+**Weeks 5–6 · ~22 hours**
 
-Doing this *after* M2 rather than before is the single most important ordering
-decision in this roadmap. Decorating a layout you have not played is how
-projects end up with a beautiful map that is no fun to fight in.
+`BotDirector` fills both teams to five. Tune `BotWeaponUser` — reaction delay,
+burst rhythm, aim error — until a bot is beatable but not free.
 
-> **Exit:** a screenshot you would post publicly.
+This is the milestone that makes the game testable. After it, you never again
+need to find four other people to check whether something works.
 
-## M4 — Heat and three enemy types
+> **Exit:** you play a complete match alone against nine bots and it holds up.
 
-**Weeks 8–10 · ~35 hours**
+## M4 — The map
 
-Wire `AlertSystem` to `SpawnDirector`: heat drives spawn budget, rate and
-distance. Add Rifleman and Heavy as tuning variants of the M1 enemy. Add cover
-point usage. HUD heat meter using `AlertSystem.ProgressToNextLevel`.
+**Weeks 7–9 · ~35 hours**
 
-> **Exit:** getting spotted at level 1 feels different from getting spotted at
-> level 4, and you can describe the difference in one sentence.
+**Only now** import the industrial kit. Dress the greybox you have already
+played hundreds of rounds on. Two sites, three lanes, deliberate sightlines.
+One URP lighting pass.
 
-## M5 — Three missions, HUD, audio
+Doing this after M3 rather than before is the most important ordering decision
+in this roadmap. A map you have not played is a map you will have to rebuild.
 
-**Weeks 11–13 · ~35 hours**
+> **Exit:** a screenshot you would show someone, and the layout still plays the
+> way the greybox did.
 
-Missions as `MissionDefinition` assets in `Assets/Game/Data/`. Full HUD: health,
-ammo, heat, objective marker. Audio pass — footsteps by surface, weapon fire and
-tail, enemy barks, ambience, and a two-state music system that switches on heat
-level. Main menu, pause menu, settings.
+## M5 — The bits that make it a game
 
-Free audio: [freesound.org](https://freesound.org) and the annual
-[Sonniss GDC bundles](https://sonniss.com/gameaudiogdc).
+**Weeks 10–11 · ~22 hours**
 
-> **Exit:** you can launch the game from an executable and play three different
-> missions without touching the editor.
+HUD: health, ammo, round score, timer, spike state, a scoreboard on Tab. A menu
+with **Host** and **Join by code**. Audio: footsteps by surface, gunfire and its
+tail, plant and defuse beeps, round-start and round-win stingers.
 
-## M6 — Ship it
+> **Exit:** a friend downloads a build, pastes a code, and plays without you
+> talking them through anything.
 
-**Weeks 14–16 · ~30 hours**
+## M6 — Ship it to five people
 
-Hook the client to the backend (`BackendClient`, run submission, leaderboard
-display). Build for Windows. Make an itch.io page with six screenshots and a
-45-second in-engine trailer. Get **ten external playtesters**. Fix the top ten
-complaints and nothing else.
+**Week 12 · ~12 hours**
 
-The Cloudflare work is **one hour, here** — not now. See
-[`docs/CLOUDFLARE.md`](CLOUDFLARE.md).
+Windows build. Put it somewhere they can download it. Play three matches
+together. Fix the top five complaints and nothing else.
 
-> **Exit:** a stranger on the internet has finished a run and their score is on
-> the leaderboard.
+> **Exit:** five friends have played a full match and asked when the next one is.
 
 ---
 
-## What each horizon actually buys you
-
-At 12–15 hours a week:
+## What each horizon buys you
 
 | Horizon | Milestones | What you have |
 |---|---|---|
-| **1 month** (~55h) | M0–M2 | A greybox loop. Move, aim, shoot, one enemy, one objective, extract, score. Ugly. Complete. Playable by a friend. |
-| **3 months** (~170h) | M0–M4 | The district built and lit, three enemy types, heat escalating, one full mission. A demo you can post. |
-| **6 months** | M0–M6 + polish | A shippable 30-minute game with a leaderboard. |
-| **1 year** | v1 shipped, plus one item from `LATER.md` | A game with an audience and one big new system. Vehicles, if you still want them. |
+| **2 weeks** | M0–M1 | Two people shooting each other over the internet. Ugly. Real. |
+| **1 month** | M0–M2 | Complete rounds with a winner. Playable with one friend. |
+| **6 weeks** | M0–M3 | A full 5v5 match with bots, testable alone. |
+| **3 months** | M0–M6 | The thing you set out to make. |
 
 ---
 
@@ -145,29 +134,29 @@ At 12–15 hours a week:
 
 | Day | ~Hours | Goal |
 |---|---|---|
-| **0** | 2–4 | The compile gate above. Create from the URP template, move the code in, fix the Console, delete what v1 does not need. |
-| **1** | 2–3 | Create `Sandbox.unity`, a 40×40m ProBuilder floor and a dozen cover boxes. Drop in a capsule with `CharacterController` + `ThirdPersonMotor` + `PlayerInputReader`. **WASD moves a capsule.** Commit. |
-| **2** | 2–3 | Cinemachine 3: a follow camera and an aim camera, swapped on right mouse. A crosshair on a Canvas. Commit. |
-| **3** | 2–3 | The rifle mesh in the hand socket, a `WeaponDefinition` asset, `Weapon` wired to `PlayerController`. **Shooting a wall leaves a decal.** Commit. |
-| **4** | 2–3 | Read every script that survived the deletion pass, end to end. Add your own comments where you had to stop and think. This is not busywork — code you cannot explain costs 5× to debug later, and none of it was written by you. |
-| **5** | 2–3 | Bake a NavMesh. One enemy prefab that walks a `PatrolRoute`. |
-| **6** | 2–3 | The enemy sees, chases and shoots you. You can kill it. |
-| **7** | 2–3 | Three hours on feel only: hitmarker, hit sound, impact particles, camera shake. Then show it to one person. |
+| **0** | 2–4 | Compile gate. URP template, move the code in, install NGO + Multiplayer Services, fix the Console. |
+| **1** | 2–3 | ProBuilder room. Capsule with `FirstPersonMotor` + `PlayerLook` + `PlayerInputReader`. **Mouse looks, WASD moves.** Commit. |
+| **2** | 2–3 | `NetworkManager`, Unity Transport, a player prefab with `NetworkObject`. Host and client in the editor via **Start Host / Start Client**. |
+| **3** | 2–3 | **Two capsules, two windows, both moving.** This is the day the project becomes real. |
+| **4** | 2–3 | Read every script that survived. Add your own comments where you had to stop and think. None of it was written by you. |
+| **5** | 2–3 | Rifle in hand. `PelletFired` → `FireRpc` → `ShotResolver`. Damage lands on both machines. |
+| **6** | 2–3 | `SessionLauncher`: host, get a code, join from a build on another machine. |
+| **7** | 2–3 | Three hours on feel. Then get one friend to play it. |
 
 ---
 
 ## Learning, in the order you will need it
 
-- **Foundation** — [Unity Learn Pathways](https://learn.unity.com/pathways).
-  Do *Unity Essentials* only if the editor still feels unfamiliar, then
-  *Junior Programmer* **alongside** the project, never before it.
-- **M0/M1** — Code Monkey's third-person shooter controller videos, built on
-  Unity's Starter Assets. Covers the aim camera, crosshair and hit resolution.
-- **M1** — Unity's own [AI Navigation docs](https://docs.unity3d.com/Packages/com.unity.ai.navigation@2.0/manual/index.html)
-  for NavMesh baking and agents.
-- **M3** — Unity's [e-book for level designers](https://unity.com/blog/games/e-book-for-level-designers),
+- **M0/M2** — [Netcode for GameObjects docs](https://docs-multiplayer.unity3d.com/netcode/current/about/),
+  specifically the "Golden Path" walkthrough. Do this one properly; guessing at
+  netcode wastes more time than any other kind of guessing.
+- **M0** — Unity's [Boss Room sample](https://github.com/Unity-Technologies/com.unity.multiplayer.samples.coop),
+  a complete small co-op game with NGO. Read it, do not copy it.
+- **M1** — [Multiplayer Services SDK](https://docs.unity.com/en-us/mps-sdk) for
+  the Relay session flow that `SessionLauncher` wraps.
+- **M4** — Unity's [e-book for level designers](https://unity.com/blog/games/e-book-for-level-designers),
   which teaches greybox-first for exactly the reasons this roadmap is ordered
   the way it is.
 
-**Two hours of tutorial maximum per feature.** Then implement it badly and move
-on. Refactor only when a change you actually need is hard.
+**Two hours of tutorial maximum per feature** — except netcode, where the budget
+is however long it takes to actually understand ownership, authority and RPCs.

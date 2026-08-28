@@ -1,16 +1,24 @@
 using System;
 using UnityEngine;
-using Game.Core;
 
 namespace Game.Weapons
 {
     /// <summary>
-    /// One equipped weapon: fire control, ammo, reload and hit resolution.
+    /// One equipped weapon: fire control, ammo, reload and spread.
     ///
-    /// Hitscan, not projectiles. At the ranges and muzzle velocities in this game
-    /// a projectile would be indistinguishable from a raycast while costing an
-    /// update per bullet and a pile of pooling code. Add projectiles later for
-    /// the weapons that actually need travel time (grenades, launchers).
+    /// It deliberately does NOT resolve hits. It decides that a shot happened and
+    /// where each pellet went, then raises <see cref="PelletFired"/>. Something
+    /// else traces it.
+    ///
+    /// That seam exists because this is a multiplayer game. If the weapon applied
+    /// damage locally, a kill would only exist on the shooter's machine and
+    /// everyone else would watch an unharmed player keep running. The owning
+    /// client predicts the fire rate, ammo and recoil - those must feel instant -
+    /// and ships the ray to the server, which is the only thing that decides
+    /// whether anyone was hit.
+    ///
+    /// Hitscan, not projectiles. At these ranges a projectile would be
+    /// indistinguishable from a raycast while costing an update per bullet.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class Weapon : MonoBehaviour
@@ -19,12 +27,6 @@ namespace Game.Weapons
 
         [Tooltip("Where the trace starts and the muzzle flash spawns.")]
         [SerializeField] private Transform muzzle;
-
-        [Tooltip("Everything a bullet can hit. Exclude the shooter's own layer or every shot hits the barrel of the gun.")]
-        [SerializeField] private LayerMask hitMask = ~0;
-
-        [Tooltip("Colliders on this layer count as weak points and deal critical damage.")]
-        [SerializeField] private LayerMask weakPointMask;
 
         [SerializeField] private AudioSource audioSource;
 
@@ -48,11 +50,12 @@ namespace Game.Weapons
         /// <summary>Raised once per trigger event that actually spent a round.</summary>
         public event Action Fired;
 
-        /// <summary>Raised per pellet that hit something damageable.</summary>
-        public event Action<DamageInfo> HitDamageable;
-
-        /// <summary>Raised when a hit killed the target.</summary>
-        public event Action<GameObject> Killed;
+        /// <summary>
+        /// Raised once per pellet with (origin, direction). Whoever subscribes is
+        /// responsible for tracing it - locally for a bot on the server, or over
+        /// an RPC for a player. Nothing is damaged until someone does.
+        /// </summary>
+        public event Action<Vector3, Vector3> PelletFired;
 
         public event Action AmmoChanged;
 
@@ -137,7 +140,7 @@ namespace Game.Weapons
 
             for (int i = 0; i < definition.PelletsPerShot; i++)
             {
-                TracePellet(aimOrigin, WeaponSpread.Apply(aimDirection, cone));
+                PelletFired?.Invoke(aimOrigin, WeaponSpread.Apply(aimDirection, cone));
             }
 
             _spread.RegisterShot(definition);
@@ -148,28 +151,6 @@ namespace Game.Weapons
 
             Fired?.Invoke();
             NoiseEmitted?.Invoke(transform.position, definition.NoiseRadius);
-        }
-
-        private void TracePellet(Vector3 origin, Vector3 direction)
-        {
-            if (!Physics.Raycast(origin, direction, out RaycastHit hit,
-                    definition.Range, hitMask, QueryTriggerInteraction.Ignore))
-            {
-                return;
-            }
-
-            bool critical = (weakPointMask.value & (1 << hit.collider.gameObject.layer)) != 0;
-            float damage = definition.DamageAtDistance(hit.distance);
-
-            var info = new DamageInfo(damage, hit.point, direction, gameObject, critical);
-
-            IDamageable target = DamageResolver.Resolve(hit.collider);
-            if (target == null || !target.IsAlive) return;
-
-            target.ApplyDamage(in info);
-            HitDamageable?.Invoke(info);
-
-            if (!target.IsAlive) Killed?.Invoke(hit.collider.gameObject);
         }
 
         /// <summary>

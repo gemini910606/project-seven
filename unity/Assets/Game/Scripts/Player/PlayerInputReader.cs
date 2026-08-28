@@ -28,7 +28,7 @@ namespace Game.Player
         private InputAction _look;
         private InputAction _fire;
         private InputAction _aim;
-        private InputAction _sprint;
+        private InputAction _walk;
         private InputAction _crouch;
         private InputAction _jump;
         private InputAction _reload;
@@ -41,13 +41,21 @@ namespace Game.Player
         public Vector2 Look { get; private set; }
         public bool FireHeld { get; private set; }
         public bool AimHeld { get; private set; }
-        public bool SprintHeld { get; private set; }
+        /// <summary>Held to move slowly and silently. In a tactical shooter shift SLOWS you down.</summary>
+        public bool WalkHeld { get; private set; }
         public bool CrouchHeld { get; private set; }
 
+        /// <summary>Held, not tapped: planting and defusing take seconds.</summary>
+        public bool InteractHeld { get; private set; }
+
+        /// <summary>
+        /// Polled rather than delivered as an event, so a jump can never be lost
+        /// to callback ordering between the Input System and Update.
+        /// </summary>
+        public bool JumpPressedThisFrame { get; private set; }
+
         public event Action FirePressed;
-        public event Action JumpPressed;
         public event Action ReloadPressed;
-        public event Action InteractPressed;
         public event Action PausePressed;
 
         private void Awake()
@@ -70,8 +78,8 @@ namespace Game.Player
             _aim = new InputAction("Aim", InputActionType.Button, "<Mouse>/rightButton");
             _aim.AddBinding("<Gamepad>/leftTrigger");
 
-            _sprint = new InputAction("Sprint", InputActionType.Button, "<Keyboard>/leftShift");
-            _sprint.AddBinding("<Gamepad>/leftStickPress");
+            _walk = new InputAction("Walk", InputActionType.Button, "<Keyboard>/leftShift");
+            _walk.AddBinding("<Gamepad>/leftStickPress");
 
             _crouch = new InputAction("Crouch", InputActionType.Button, "<Keyboard>/leftCtrl");
             _crouch.AddBinding("<Gamepad>/buttonEast");
@@ -89,9 +97,7 @@ namespace Game.Player
             _pause.AddBinding("<Gamepad>/start");
 
             _fire.performed += _ => FirePressed?.Invoke();
-            _jump.performed += _ => JumpPressed?.Invoke();
             _reload.performed += _ => ReloadPressed?.Invoke();
-            _interact.performed += _ => InteractPressed?.Invoke();
             _pause.performed += _ => PausePressed?.Invoke();
 
             // Mouse delta is per-frame pixels; stick input is a per-frame axis.
@@ -102,21 +108,21 @@ namespace Game.Player
         private void OnEnable()
         {
             _move.Enable(); _look.Enable(); _fire.Enable(); _aim.Enable();
-            _sprint.Enable(); _crouch.Enable(); _jump.Enable(); _reload.Enable();
+            _walk.Enable(); _crouch.Enable(); _jump.Enable(); _reload.Enable();
             _interact.Enable(); _pause.Enable();
         }
 
         private void OnDisable()
         {
             _move.Disable(); _look.Disable(); _fire.Disable(); _aim.Disable();
-            _sprint.Disable(); _crouch.Disable(); _jump.Disable(); _reload.Disable();
+            _walk.Disable(); _crouch.Disable(); _jump.Disable(); _reload.Disable();
             _interact.Disable(); _pause.Disable();
         }
 
         private void OnDestroy()
         {
             _move.Dispose(); _look.Dispose(); _fire.Dispose(); _aim.Dispose();
-            _sprint.Dispose(); _crouch.Dispose(); _jump.Dispose(); _reload.Dispose();
+            _walk.Dispose(); _crouch.Dispose(); _jump.Dispose(); _reload.Dispose();
             _interact.Dispose(); _pause.Dispose();
         }
 
@@ -125,8 +131,10 @@ namespace Game.Player
             Move = _move.ReadValue<Vector2>();
             FireHeld = _fire.IsPressed();
             AimHeld = _aim.IsPressed();
-            SprintHeld = _sprint.IsPressed();
+            WalkHeld = _walk.IsPressed();
             CrouchHeld = _crouch.IsPressed();
+            InteractHeld = _interact.IsPressed();
+            JumpPressedThisFrame = _jump.WasPressedThisFrame();
 
             Vector2 raw = _look.ReadValue<Vector2>();
             float sensitivity = _lookIsGamepad ? gamepadSensitivity : mouseSensitivity;
@@ -139,12 +147,14 @@ namespace Game.Player
             Look = raw * (sensitivity * (AimHeld ? aimSensitivityScale : 1f));
         }
 
-        /// <summary>Zeroes held state. Call when opening a menu so the player does not keep firing.</summary>
+        /// <summary>Zeroes held state. Call when opening a menu or when the round freezes players.</summary>
         public void ClearHeldState()
         {
             Move = Vector2.zero;
             Look = Vector2.zero;
-            FireHeld = AimHeld = SprintHeld = CrouchHeld = false;
+            FireHeld = AimHeld = WalkHeld = CrouchHeld = false;
+            InteractHeld = false;
+            JumpPressedThisFrame = false;
         }
     }
 }

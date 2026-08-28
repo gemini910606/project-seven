@@ -18,9 +18,9 @@ namespace Game.EditorTools
         private static readonly string[] RequiredTags =
         {
             "Player",
-            "Enemy",
-            "Collectible",
-            "ExtractionZone",
+            "Bot",
+            "Spike",
+            "BombSite",
         };
 
         /// <summary>
@@ -29,12 +29,13 @@ namespace Game.EditorTools
         /// </summary>
         private static readonly string[] RequiredLayers =
         {
-            "Player",       // 8  - the player capsule
-            "Enemy",        // 9  - enemy bodies
-            "WeakPoint",    // 10 - head colliders; Weapon treats hits here as critical
-            "Environment",  // 11 - static world geometry, blocks sight and bullets
-            "Interactable", // 12 - doors, pickups
-            "Projectile",   // 13 - reserved for when hitscan is not enough
+            // Players and bots share one layer on purpose: nothing about hit
+            // resolution should care which one it is shooting at. Team identity
+            // lives on the TeamMember component, not in the physics layers.
+            "Character",    // 8  - player and bot bodies
+            "WeakPoint",    // 9  - head colliders; ShotResolver treats hits here as critical
+            "Environment",  // 10 - static geometry, blocks sight and bullets
+            "Interactable", // 11 - the spike, doors
         };
 
         [MenuItem("Game/Bootstrap Project", priority = 0)]
@@ -102,17 +103,15 @@ namespace Game.EditorTools
 
         private static void ConfigureCollisionMatrix()
         {
-            int player = LayerMask.NameToLayer("Player");
-            int enemy = LayerMask.NameToLayer("Enemy");
+            int character = LayerMask.NameToLayer("Character");
             int weakPoint = LayerMask.NameToLayer("WeakPoint");
 
-            if (player < 0 || enemy < 0 || weakPoint < 0) return;
+            if (character < 0 || weakPoint < 0) return;
 
             // Weak points are hitboxes, not physical volumes. Letting them collide
-            // with characters makes enemies bump off each other's heads, which
+            // with characters makes players bump off each other's heads, which
             // looks exactly as silly as it sounds.
-            Physics.IgnoreLayerCollision(weakPoint, player, true);
-            Physics.IgnoreLayerCollision(weakPoint, enemy, true);
+            Physics.IgnoreLayerCollision(weakPoint, character, true);
             Physics.IgnoreLayerCollision(weakPoint, weakPoint, true);
         }
 

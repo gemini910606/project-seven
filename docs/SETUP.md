@@ -1,8 +1,7 @@
 # Setup
 
-Two independent halves. The game runs with no backend at all — set
-`BackendConfig.Enabled = false` and skip part 2 entirely until you want a
-leaderboard.
+One deployable: the Unity game. There is no backend any more — see
+[`CLOUDFLARE.md`](CLOUDFLARE.md) for what was deleted and why.
 
 ---
 
@@ -13,8 +12,10 @@ leaderboard.
 - **Unity 6.3 LTS (`6000.3.x`)**, installed through Unity Hub.
   6.3 is supported until December 2027; 6.0 LTS runs out in October 2026, so a
   project started now should not begin there.
-- Modules: **Windows Build Support (IL2CPP)** and, if you want the browser
-  demo, **WebGL Build Support**.
+- Module: **Windows Build Support (IL2CPP)**. No WebGL - a networked 5v5
+  shooter is not a browser target, and nobody is playing this in a tab.
+- **.NET SDK 8** if you want to run the match-rule tests outside Unity, which
+  you do.
 - **Git LFS** (`git lfs install`) — the repo's `.gitattributes` routes binary art
   through it.
 
@@ -36,10 +37,11 @@ code into it:
      carries `GraphicsSettings.asset` with URP wired up, plus quality settings),
    - `Assets/Settings/` (the URP asset and renderer),
    - `Packages/packages-lock.json`.
-3. Merge this repo's `Packages/manifest.json` into the template's — or just add
-   the extra packages through Package Manager: **Cinemachine, Input System,
-   AI Navigation, Animation Rigging, ProBuilder**. (Skip Addressables; nothing in
-   v1 uses it. ProBuilder you need on day one, for greyboxing.)
+3. Merge this repo's `Packages/manifest.json` into the template's — or add the
+   packages through Package Manager: **Netcode for GameObjects**, **Multiplayer
+   Services**, **Authentication**, **Input System**, **AI Navigation**,
+   **ProBuilder**. The first three are what make it a multiplayer game; the last
+   one you need on day one for greyboxing.
 4. Open `unity/`. Let it import. The first import takes a while.
 5. **Read the Console.** See the compile gate below.
 6. Run **Game → Bootstrap Project** from the menu bar. This creates the tags,
@@ -52,118 +54,84 @@ code into it:
 
 ### The compile gate
 
-**None of the C# in this repo has ever been compiled by Unity.** There are no
-`.meta` files under `unity/Assets`, which is the proof. It was written without an
-editor available, structurally checked, and committed.
+**Almost none of this C# has ever been compiled by Unity.** There are no `.meta`
+files under `unity/Assets`, which is the proof.
+
+The exception is `Round/Rules/`, which is genuinely compiled and genuinely
+tested - `dotnet test tools/RulesTests` builds those same files and runs 25
+tests against them. Everything else was written without an editor available,
+structurally checked, and committed.
 
 Expect errors on first import, and treat that as normal rather than as a
 disaster. The likely categories:
 
-- **Package API drift** — `CinemachineCamera.Priority` and the
-  `Unity.Cinemachine` namespace are Cinemachine 3.x; if Package Manager resolved
-  a different major version, these move.
+- **Package API drift** — the Multiplayer Services SDK is young and moves.
+  `SessionOptions`, `WithRelayNetwork()` and `JoinSessionByCodeAsync` are the
+  calls to check first, against
+  https://docs.unity.com/en-us/mps-sdk/create-session .
 - **Missing packages** — anything referenced in `Game.Runtime.asmdef` that did
   not install will fail the whole assembly, not just one file.
 - **Ordinary mistakes** in code nobody has run.
 
-Then do the deletion pass. Nothing in v1 needs `WorldStreamer`, `SaveSystem`,
-`LobbyRoom`, or `Addressables`. **Delete what you do not understand.** Code you
+Then do the deletion pass. **Delete what you do not understand.** Code you
 cannot explain costs about five times as much to debug later, and 800 lines you
-wrote beats 4,850 you inherited.
+wrote beat 4,000 you inherited.
 
 ### Wire up a playable scene
 
-Nothing in this repo ships a scene — scenes are `.unity` YAML that is painful to
-review and impossible to merge. Build one:
+Nothing here ships a scene - `.unity` files are YAML that is painful to review
+and impossible to merge. Build one:
 
-1. **Player**: a capsule with `CharacterController`, `PlayerInputReader`,
-   `ThirdPersonMotor`, `PlayerAimController`, `Health`, `PlayerController`,
-   `WeaponHolder`. Tag it `Player`, layer `Player`.
-2. **Camera**: a `CinemachineBrain` on the Main Camera, plus two
-   `CinemachineCamera`s — a hip one and a tighter aim one — both following a
-   `CameraPivot` child of the player. Assign them to `PlayerAimController`.
-3. **Weapon**: the rifle prefab under the hand socket, with a `Weapon` component
-   pointing at a `WeaponDefinition` asset and a `Muzzle` transform.
-4. **AI**: bake a NavMesh (`Window → AI → Navigation`). An enemy prefab needs
-   `NavMeshAgent`, `EnemyLocomotion`, `EnemyPerception`, `EnemyBrain`, `Health`,
-   `EnemyWeaponUser` and its own `Weapon`.
-5. **Director**: one GameObject carrying `AlertSystem`, `NoiseSystem`,
-   `SpawnDirector`, `MissionDirector` and `BackendClient`.
-6. **Mission**: **Create → Game → Mission Definition**, add objectives from
-   **Create → Game → Objectives → …**, and drop `ObjectiveZone` triggers in the
-   scene whose ids match.
+1. **NetworkManager**: one GameObject with `NetworkManager` + `UnityTransport`.
+   Assign the player prefab.
+2. **Player prefab**: `CharacterController`, `NetworkObject`,
+   `NetworkTransform`, `FirstPersonMotor`, `PlayerLook`, `PlayerInputReader`,
+   `NetworkPlayer`, `Health`, `TeamMember`, `CombatantRegistration`,
+   `WeaponHolder`. A `CameraPivot` child at eye height holds the camera; put it
+   in `NetworkPlayer.localOnly` so only the owner sees through it, and the body
+   mesh in `remoteOnly`.
+3. **Weapon**: the rifle under the hand socket, with `Weapon` pointing at a
+   `WeaponDefinition` asset. One `ShotResolver` in the scene.
+4. **Round**: one GameObject with `NetworkObject`, `RoundDirector`,
+   `TeamSpawns`, `BotDirector` and `NoiseSystem`. A `Spike` with a
+   `NetworkObject`, and a `BombSite` per site.
+5. **Spawns**: empty transforms parented under `TeamSpawns`, five per side.
+   These are keyed by SIDE, not team - the teams swap between them at halftime.
+6. **Bot prefab**: like the player prefab, minus input and camera, plus
+   `NavMeshAgent`, `BotLocomotion`, `BotPerception`, `BotBrain`,
+   `BotWeaponUser`. Bake a NavMesh.
 
-`docs/ARCHITECTURE.md` explains why the pieces are split this way.
+[`ARCHITECTURE.md`](ARCHITECTURE.md) explains why the pieces split this way.
+
+### Playing it
+
+**In the editor**, use NetworkManager's *Start Host*, then run a build alongside
+and *Start Client* - or install Unity's Multiplayer Play Mode package to get two
+players in one editor.
+
+**Over the internet**, `SessionLauncher.HostAsync()` returns a join code.
+Whoever hosts pastes it in Discord; everyone else calls `JoinAsync(code)`. Relay
+handles NAT traversal, so nobody forwards a port.
 
 ### Tests
 
-**Window → General → Test Runner → EditMode → Run All.** 37 tests, no scene
-required. `RunSignerTests` is the important one: it pins the exact signature
-string the Worker expects.
+**Window > General > Test Runner > EditMode > Run All.**
+
+`MatchCoreTests` is the one that matters. It also runs outside Unity:
+
+```bash
+dotnet test tools/RulesTests     # 25 tests, no editor needed
+```
+
+Both run the same file. The dotnet one is the one that is currently known to
+pass.
 
 ---
 
-## 2. The Cloudflare backend
+## 2. The domain
 
-```bash
-cd backend
-npm install
-npx wrangler login
-```
-
-Then create the resources and paste the returned ids into `wrangler.toml`:
-
-```bash
-npx wrangler d1 create gta7-db            # -> database_id
-npx wrangler kv namespace create CONFIG   # -> id
-npx wrangler r2 bucket create gta7-builds
-```
-
-Set the secrets. `RUN_HMAC_SECRET` must match `BackendConfig.RunSigningSecret`
-in Unity:
-
-```bash
-npx wrangler secret put RUN_HMAC_SECRET
-npx wrangler secret put TURNSTILE_SECRET   # optional; blank disables the check
-```
-
-Migrate and deploy:
-
-```bash
-npm run db:migrate:remote
-npm run deploy
-```
-
-### Local development
-
-```bash
-cp .dev.vars.example .dev.vars
-npm run db:migrate:local
-npm run dev          # http://localhost:8787
-```
-
-Point `BackendConfig.BaseUrl` at `http://localhost:8787/v1` while developing.
-
-### Verify it works
-
-```bash
-curl https://api.your-domain.com/v1/health
-# {"status":"ok","environment":"production","checks":{"d1":"ok"}}
-```
-
----
-
-## 3. DNS
-
-See `docs/CLOUDFLARE.md` for the full subdomain plan and what each service
-costs. The short version:
-
-| Record | Points at |
-|---|---|
-| `www` / apex | Cloudflare Pages (the `web/` folder) |
-| `api` | the Worker (**Workers Routes → Custom Domain**) |
-| `cdn` | the R2 bucket's public custom domain |
-| `play` | Pages, serving the WebGL build |
+There is no backend to deploy. See [`CLOUDFLARE.md`](CLOUDFLARE.md) - the short
+version is Email Routing, and R2 behind `dl.your-domain` for the build.
 
 ---
 
@@ -182,9 +150,7 @@ muzzle but `PlayerAimController.AimPoint` is traced from the screen centre. That
 convergence is deliberate; if it looks wrong, the muzzle transform is probably
 pointing down the wrong axis.
 
-**Run submissions return 401.** `RUN_HMAC_SECRET` and
-`BackendConfig.RunSigningSecret` disagree. Run both test suites — if they pass
-and submissions still 401, it is the secret, not the code.
 
-**The WebGL build shows a black canvas.** Almost always the `Content-Encoding`
-headers. `web/_headers` has them; check they were deployed with the build.
+
+**Two builds refuse to connect.** Version mismatch. NGO checks that both ends
+run the same Netcode config; rebuild both sides from the same commit.

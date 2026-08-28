@@ -1,108 +1,81 @@
 # Project Seven
 
-A compact open-world extraction shooter in Unity, with a Cloudflare-hosted
-backend. One district, one rifle, and an alert level that never forgets what
-you did.
+A **5v5 round-based tactical shooter** in Unity, for playing with friends. One
+map, one rifle, bomb-defusal rounds, and bots that fill the empty slots so five
+versus five works when three of you are online.
 
-> Not affiliated with, endorsed by, or connected to Rockstar Games or the Grand
-> Theft Auto series.
+Host over Unity Relay, share a join code, play. No accounts, no store page, no
+matchmaking, no anti-cheat.
 
 ---
 
-## Read this before you trust any of the C#
+## What is actually verified
 
-**None of the 4,850 lines of C# in `unity/` has ever been compiled by Unity.**
+| Part | Status |
+|---|---|
+| **Match rules** (`Round/Rules/`) | **Compiled and tested.** 25 tests pass under plain dotnet. Mutation-checked: injecting the classic post-plant bug turns 2 of them red. |
+| Everything else in `unity/` | **Never compiled.** No `.meta` files exist, so no Unity editor has ever imported this project. |
 
-There are no `.meta` files anywhere under `unity/Assets`, which is proof that no
-editor has ever imported this project. The code was written without an editor
-present, structurally checked, and committed. It is a *starting point that is
-probably close*, not working code.
+That split is deliberate. The match rules have no `UnityEngine` dependency at
+all, so `tools/RulesTests` builds the *same source files* with `dotnet test` —
+no editor, no licence, no 20-minute import. Round logic is where a shooter's
+most embarrassing bugs live, so it is the part worth proving.
 
-`backend/` is different — it genuinely typechecks and its 36 tests genuinely
-pass, because that toolchain runs without Unity.
+```bash
+dotnet test tools/RulesTests     # 25 tests, ~40ms
+```
 
-**So Day 0 is a compile gate, and it is allowed to fail:**
+The rest is a starting point that is probably close. **Day 0 is a compile gate**
+— see [`docs/ROADMAP.md`](docs/ROADMAP.md). Expect errors, fix them, and delete
+anything you do not understand.
 
-1. Open the project (see [`docs/SETUP.md`](docs/SETUP.md) — use the **URP
-   template**, not "add from disk", or everything renders magenta).
-2. Read the Console. Fix what does not compile.
-3. **Delete anything you do not understand or do not need yet.** Inheriting
-   4,850 lines of never-run code you did not write can easily be slower than
-   writing 800 lines you do understand. `WorldStreamer`, `SaveSystem` and
-   `LobbyRoom` are all fair game — nothing in v1 needs them.
+---
 
 ## Start here
 
-**[`SCOPE.md`](SCOPE.md)** — what v1 is, and the arithmetic on why it is not GTA.
-**[`docs/ROADMAP.md`](docs/ROADMAP.md)** — sixteen weeks, with a day-by-day first week.
+**[`SCOPE.md`](SCOPE.md)** — what v1 is, and why round-based is a far better
+project than the open world this started as.
+**[`docs/ROADMAP.md`](docs/ROADMAP.md)** — twelve weeks, day-by-day first week.
 
-This repository contains a lot of systems and **zero playable scenes**. After the
-compile gate, the next thing to do is make a capsule move on a floor — not write
-more code.
+The roadmap's first real milestone is *two windows, one world*. Get two machines
+talking in week one; multiplayer is not something you add at the end.
 
-> **On the repo name.** This repository is public and called `GTA7`. "GTA" is a
-> Take-Two trademark and they enforce it aggressively and indiscriminately. The
-> genre is completely free — copyright does not protect mechanics — but the name
-> is not. Rename the repo, the folder, the domain and the build identifier to
-> **Project Seven** before this gets any attention.
+> **On the repo name.** This is called `GTA7` and it is public. It is not a GTA
+> clone any more, and "GTA" is a Take-Two trademark. Rename it.
 
 ---
 
 ## Layout
 
 ```
-unity/          the game        Unity 6.3 LTS (6000.3), URP
-backend/        the API         Cloudflare Workers, TypeScript, D1
-web/            the site        static, Cloudflare Pages
-docs/           the reasoning
+unity/
+  Assets/Game/Scripts/
+    Round/Rules/    engine-free match rules  <- the tested part
+    Round/          round director, spike, bomb sites, spawns
+    Player/         first-person motor, look, input, network glue
+    Weapons/        weapon data, fire control, server-side hit resolution
+    Bots/           perception, locomotion, brain, bot director
+    Core/           health, damage, teams, combatant registry
+    Net/            Relay session hosting and joining
+tools/RulesTests/   dotnet test project compiling the rules outside Unity
+web/                a page with a download link. That is all it needs to be.
+docs/
 ```
-
-The game runs with the backend switched off (`BackendConfig.Enabled = false`).
-A leaderboard should never be able to stop someone playing.
 
 ## Docs
 
 | File | What it answers |
 |---|---|
-| [`SCOPE.md`](SCOPE.md) | What is in v1 and what is not |
+| [`SCOPE.md`](SCOPE.md) | What is in v1, what the pivot cost |
 | [`LATER.md`](LATER.md) | Where every good idea goes until v1 ships |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones, exit criteria, week 1 day by day |
-| [`docs/SETUP.md`](docs/SETUP.md) | Getting both halves running |
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the code is organised and why |
-| [`docs/ASSETS.md`](docs/ASSETS.md) | What art you have, what you need, and the licence rules |
-| [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md) | What the domain is for, with real costs |
-
-## Quick start
-
-```bash
-# Backend — 36 tests, no Unity required
-cd backend && npm install && npm test
-
-# Game
-# Unity Hub -> Add project from disk -> unity/
-# then: Game -> Bootstrap Project
-```
-
-## Tests
-
-| Suite | Count | Run with |
-|---|---|---|
-| Backend | 36 | `cd backend && npm test` |
-| Unity EditMode | 37 | Window → General → Test Runner |
-
-`RunSignerTests.cs` and `backend/test/crypto.test.ts` pin the **same** example
-signature string from opposite sides of the wire. If either drifts, a test goes
-red instead of every player silently getting a 401 on run submission.
-
-Likewise `ScoreCalculatorTests.cs` and `backend/test/antiCheat.test.ts` assert
-that the client's maximum possible score stays under the server's cheat-detection
-ceiling. Getting that wrong is invisible in the worst way: perfect runs simply
-stop appearing on the leaderboard.
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | Milestones and exit criteria |
+| [`docs/SETUP.md`](docs/SETUP.md) | Getting it open and connected |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How it is organised, and the netcode's honest limits |
+| [`docs/ASSETS.md`](docs/ASSETS.md) | What art to get and the licence rules |
+| [`docs/CLOUDFLARE.md`](docs/CLOUDFLARE.md) | What the domain is for now (much less than before) |
 
 ## Assets
 
 **Store-bought art is never committed here.** Unity Asset Store and Fab licences
-are per-seat and forbid redistribution. Everything imported goes in
+are per-seat and forbid redistribution. Imports go in
 `unity/Assets/ThirdParty/`, which is gitignored.
-[`docs/ASSETS.md`](docs/ASSETS.md) is the manifest of what to import and what to
-do to it afterwards.
