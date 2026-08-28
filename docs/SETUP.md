@@ -9,7 +9,10 @@ One deployable: the Unity game. There is no backend any more — see
 
 ### Requirements
 
-- **Unity 6.3 LTS (`6000.3.x`)**, installed through Unity Hub.
+- **Unity 6.3 LTS**, installed through Unity Hub. `ProjectVersion.txt` pins
+  **6000.3.21f1**; if you have a different 6.3 patch, edit that file to match
+  what you actually installed rather than installing a second editor. The
+  package pins in `Packages/manifest.json` follow whatever that editor bundles.
   6.3 is supported until December 2027; 6.0 LTS runs out in October 2026, so a
   project started now should not begin there.
 - Module: **Windows Build Support (IL2CPP)**. No WebGL - a networked 5v5
@@ -98,11 +101,15 @@ disaster. The likely categories:
   editor that has it and yours does not. **Any `CS0117`/`CS0246` pointing inside
   `Library/PackageCache` means the same thing.**
 
+  **The rule that actually prevents this: make `ProjectVersion.txt` match the
+  editor you have installed, and use the package versions that editor bundles.**
+  A pin that is right for one 6.3 patch can be wrong for another - Input System
+  1.20.0 became the bundled version in 6000.3.21f1, and is too new for the
+  patches before it.
+
   Two fixes, either is fine:
   - **Lower the package** in `Packages/manifest.json` by one minor version, then
-    delete `Library/PackageCache` and reopen. (Input System 1.20.0 needs editor
-    6000.3.21f1+; 1.19.0 covers the whole 6.3 line, which is why the manifest
-    pins 1.19.0.)
+    delete `Library/PackageCache` and reopen.
   - **Raise the editor** to the newest 6.3 patch in Unity Hub.
 
   The versions in `Packages/manifest.json` were chosen from Unity's docs, not by
