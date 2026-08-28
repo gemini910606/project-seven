@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using Game.Bots;
 using Game.Core;
 using Game.Round;
 using Game.Weapons;
@@ -174,6 +175,15 @@ namespace Game.Player
 
             Weapon weapon = weapons != null ? weapons.Current : null;
             if (weapon == null) return;
+
+            // Gunfire is the loudest thing in this game and the bots were deaf to
+            // it: Weapon raises NoiseEmitted and nothing ever subscribed, so a bot
+            // could hear you walking and not hear the firefight around the corner.
+            //
+            // It goes here rather than next to the event because the event fires on
+            // the shooter's own machine, which for a client has no bot listeners at
+            // all - every bot's perception lives on the server.
+            NoiseSystem.EmitSafe(origin, weapon.Definition.NoiseRadius);
 
             shotResolver.Resolve(gameObject, weapon.Definition, origin, direction);
         }

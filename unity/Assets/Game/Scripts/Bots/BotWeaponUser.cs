@@ -66,13 +66,27 @@ namespace Game.Bots
 
         private void OnEnable()
         {
-            if (weapon != null) weapon.PelletFired += OnPelletFired;
+            if (weapon == null) return;
+
+            weapon.PelletFired += OnPelletFired;
+            weapon.NoiseEmitted += OnNoiseEmitted;
         }
 
         private void OnDisable()
         {
-            if (weapon != null) weapon.PelletFired -= OnPelletFired;
+            if (weapon == null) return;
+
+            weapon.PelletFired -= OnPelletFired;
+            weapon.NoiseEmitted -= OnNoiseEmitted;
         }
+
+        /// <summary>
+        /// A bot's own gunfire is heard by the others. Subscribing to the event is
+        /// safe here in a way it is not for a player: this component only ever runs
+        /// on the server, which is where every listener lives.
+        /// </summary>
+        private static void OnNoiseEmitted(Vector3 position, float radius) =>
+            NoiseSystem.EmitSafe(position, radius);
 
         /// <summary>
         /// Bots only ever run on the host, which IS the server, so their shots go
