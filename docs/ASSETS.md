@@ -35,13 +35,36 @@ The vertical slice in `docs/ROADMAP.md` is scoped to a **compact industrial
 district**, which is exactly what 86679 is good at. That is not a coincidence —
 scope to the art you own.
 
-### 2. Rifle — Fab "FPS Guns 4K - Rifle 1"
+### 2. Rifle — get the Unity Asset Store version instead
 
-`https://www.fab.com/listings/a7e70f32-2091-416c-8da9-1546b4dff1bb`
+You linked `https://www.fab.com/listings/a7e70f32-2091-416c-8da9-1546b4dff1bb`.
+
+The same gun family is on the **Unity Asset Store**, natively, for **free**:
+**"FPS Gun 4K - Assault Rifle 1"** (id **223855**) by Heart State Games. 107.4 MB,
+Unity-ready.
+
+Take the Asset Store one. It arrives as a Unity prefab with Unity materials and
+no engine-conversion question, which removes the entire class of problems in the
+checklist below. The publisher has a Sniper (223880) and an SMG (223861) in the
+same style if you ever want a second weapon — which, per `LATER.md`, you do not
+yet.
 
 ### 3. Character — Fab "Apocalyptic Survivor / Assassin, Low Poly"
 
 `https://www.fab.com/listings/7b1fe6a8-89ea-491f-b59f-1d2aa48bbe79`
+
+**Do not spend money resolving this one.** For a vertical slice, use
+**[Mixamo](https://www.mixamo.com/)**: free, royalty-free for commercial use,
+auto-rigs an FBX, and ships a large animation library that imports to Unity as a
+Humanoid. It gets you a moving character today instead of a retargeting session.
+(Caveat: Adobe has not meaningfully updated Mixamo in years and it had a
+multi-day outage in June 2025 — download what you need and commit it, do not
+depend on the service being up.)
+
+**MetaHumans are also an option now.** Epic changed the licensing in June 2025:
+MetaHumans can be used with any engine, Unity included. If you want a
+higher-fidelity protagonist later, that door is open. It was closed until
+recently, so older forum threads saying otherwise are stale.
 
 ---
 
@@ -63,6 +86,16 @@ whether the asset is usable here at all:
    names and proportions differ from Unity's Humanoid rig.
 4. **Poly count and texture resolution.** "4K" in a gun's name means 4096px
    textures. That is fine for one hero weapon and ruinous if you import twenty.
+5. **Render pipeline.** This project is URP. A great many character and city
+   packs are **Built-in only** or **HDRP only**, and the listing says so in small
+   text most people skip. Two real examples: *Post apocalyptic survivor 1*
+   (Asset Store 300324) is Built-in only; *Modern City Downtown with Interiors
+   Megapack* (228685) is HDRP only. Converting is possible and is never as quick
+   as it sounds.
+6. **If the Fab licence is Creative Commons Attribution** rather than the
+   Standard Licence, you take on a **shipping obligation**: the credit has to
+   appear somewhere in the released game. Start a `CREDITS.md` the first time
+   this happens, not the week before launch.
 
 ---
 
@@ -111,6 +144,12 @@ This is the fiddly one. Budget half a day, not half an hour.
 - Assets baked into a **built game** are fine — that is the entire point of the
   licence. Distributing the *source* assets is not.
 - Keep receipts. If you ever sell the game, you may be asked to show the chain.
+- **Unity itself is free here.** Unity Personal covers individuals and companies
+  under **US$200,000** in annual revenue/funding. You are not close.
+- **Git LFS on GitHub Free/Pro** includes **10 GiB of storage and 10 GiB of
+  bandwidth per month**, metered beyond that (data packs were discontinued).
+  That is ample for art you author yourself, and irrelevant for store assets,
+  which never enter the repo at all.
 
 ---
 
