@@ -58,9 +58,20 @@ namespace Game.Round
         /// <summary>
         /// Which side a team is on right now. Safe on clients: derived from the
         /// replicated swap flag rather than from the server-only core.
+        ///
+        /// Throws for <see cref="MatchTeam.None"/>, exactly as MatchCore does.
+        /// This is the same rule stated twice - once in the tested core and once
+        /// here for clients - and the two disagreeing is the whole failure mode
+        /// the rules tests exist to catch. Returning Defenders for a teamless
+        /// character, which is what this used to do, is a silent wrong answer.
         /// </summary>
         public Side SideOf(MatchTeam team)
         {
+            if (team == MatchTeam.None)
+            {
+                throw new System.ArgumentException("No side for MatchTeam.None", nameof(team));
+            }
+
             bool isTeamA = team == MatchTeam.A;
             bool attacking = _sidesSwapped.Value ? !isTeamA : isTeamA;
             return attacking ? Side.Attackers : Side.Defenders;
@@ -143,6 +154,12 @@ namespace Game.Round
                 if (!health.IsAlive) continue;
                 if (!health.TryGetComponent(out TeamMember member)) continue;
 
+                // A character with no team is on neither side, so it is not part
+                // of either count. Asking MatchCore instead throws, and this loop
+                // is what decides when a round ends by elimination - an exception
+                // here stops rounds ending at all.
+                if (member.Team == MatchTeam.None) continue;
+
                 if (_core.SideOf(member.Team) == Side.Attackers) attackers++;
                 else defenders++;
             }
@@ -197,10 +214,16 @@ namespace Game.Round
                 health.ResetToFull();
                 health.gameObject.SetActive(true);
 
-                if (spawns != null && health.TryGetComponent(out TeamMember member))
+                if (spawns != null
+                    && health.TryGetComponent(out TeamMember member)
+                    && member.Team != MatchTeam.None)
                 {
                     spawns.PlaceAtSpawn(health.transform, _core.SideOf(member.Team));
                 }
+
+                // Bodies keep their hitboxes switched off from the moment they
+                // died until here.
+                if (health.TryGetComponent(out CharacterHitboxes hitboxes)) hitboxes.ResetForRound();
 
                 if (health.TryGetComponent(out Game.Bots.BotBrain brain)) brain.ResetForRound();
             }

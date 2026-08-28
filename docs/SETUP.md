@@ -262,6 +262,14 @@ Player                 layer: Ignore Raycast   CharacterController, Health, Team
 └─ CameraPivot         (owner only)            Camera, AudioListener, weapon
 ```
 
+`CharacterHitboxes` on the root switches both hitboxes off when the character
+dies and back on at the start of the next round. Nothing removes a body from the
+world - there is no respawn inside a round - so without that, corpses stand
+around absorbing bullets: a raycast stops at the first collider it meets, the
+shot resolves against a dead Health and does nothing, and the round the bullet
+was spent on is over. It finds its own colliders by layer, so there is nothing
+to wire and nothing to forget.
+
 **The movement volume and the hit volumes are different objects.** The
 CharacterController wraps the whole body, so it is always the outermost surface
 - a head collider placed inside it can never be the nearest hit, and headshots

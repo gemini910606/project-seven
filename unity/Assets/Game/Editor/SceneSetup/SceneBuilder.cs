@@ -397,6 +397,7 @@ namespace Game.EditorTools
             root.AddComponent<Health>();
             root.AddComponent<TeamMember>();
             root.AddComponent<CombatantRegistration>();
+            root.AddComponent<CharacterHitboxes>();
 
             GameObject body = new("Body") { layer = LayerMask.NameToLayer("Character") };
             body.transform.SetParent(root.transform);
