@@ -140,17 +140,30 @@ version is Email Routing, and R2 behind `dl.your-domain` for the build.
 **Everything is magenta.** Imported materials are Built-in, the project is URP.
 `Edit → Rendering → Materials → Convert All Built-in Materials to URP`.
 
-**The enemy stands still and does nothing.** No NavMesh under it. Bake one, and
-check `EnemyLocomotion.MoveTo` is not being handed an off-mesh point — it logs
-nothing when `SamplePosition` fails, by design, because it happens constantly at
-world edges.
+**Nobody can move, forever.** `RoundDirector.PlayersFrozen` is true during Prep
+and Over, and `RoundPhase.Prep` is the zero value — so a director that never ran
+`OnNetworkSpawn` on the server reads as a permanent prep phase and freezes
+everyone. Check the `RoundDirector` GameObject has a `NetworkObject` and is
+actually spawned.
 
-**Shots come out of the gun but miss the crosshair.** `fireOrigin` is set to the
-muzzle but `PlayerAimController.AimPoint` is traced from the screen centre. That
-convergence is deliberate; if it looks wrong, the muzzle transform is probably
-pointing down the wrong axis.
+**Shooting does nothing to other players.** Hits resolve on the server only
+(`ShotResolver`), so look at the *host's* Console, not the client's. Two usual
+causes: there is no `ShotResolver` in the scene, or `TeamMember` is missing from
+one of the characters — `ShotResolver` skips friendly fire via
+`TeamMember.AreHostile`, and that returns false when either side has no team, so
+every shot is silently treated as friendly.
 
+**A client connects but sees nobody.** The player prefab has no
+`NetworkTransform`, or it is not assigned on the `NetworkManager`.
 
+**Everyone spawns stacked inside each other.** `TeamSpawns` round-robins, but
+only if `ResetCursors()` runs at round start — `RoundDirector` calls it, so this
+means the director does not have the `TeamSpawns` reference wired.
+
+**Bots stand still.** No NavMesh under them, or no objective assigned on
+`BotDirector`. `BotLocomotion.MoveTo` deliberately logs nothing when
+`NavMesh.SamplePosition` fails, because near a level's edges that happens
+constantly and the log would be useless noise.
 
 **Two builds refuse to connect.** Version mismatch. NGO checks that both ends
 run the same Netcode config; rebuild both sides from the same commit.
