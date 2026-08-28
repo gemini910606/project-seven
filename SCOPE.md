@@ -36,8 +36,9 @@ package 86679 over the top.
 **One player.** Third-person, camera-relative movement, ADS, sprint, crouch.
 No cover system, no vaulting, no melee.
 
-**One weapon.** The Fab rifle, hip-fire and aimed, with reload. `WeaponDefinition`
-already supports fire modes and shotguns — that is for later, not now.
+**One weapon.** The free Unity Asset Store rifle (`FPS Gun 4K - Assault Rifle 1`,
+id 223855), hip-fire and aimed, with reload. `WeaponDefinition` already supports
+fire modes and shotguns — that is for later, not now.
 
 **Three enemy types**, all the same prefab with different tuning:
 | Type | Difference |

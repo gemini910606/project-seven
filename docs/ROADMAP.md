@@ -11,6 +11,24 @@ not start the next one.
 
 ---
 
+## M-1 — The compile gate
+
+**Day 0 · 2–4 hours, and it is allowed to be ugly**
+
+None of the C# in this repo has ever been compiled by Unity — there are no
+`.meta` files, which is the proof. Before anything else:
+
+1. Create the project from Unity's **URP template** and move the code in, per
+   [`SETUP.md`](SETUP.md). Do not open `unity/` directly; there is no
+   `GraphicsSettings.asset` and everything will render magenta.
+2. Fix whatever does not compile. Expect package API drift and ordinary
+   mistakes in code nobody has run.
+3. **Delete what you do not need for v1.** `WorldStreamer`, `SaveSystem`,
+   `LobbyRoom`, Addressables. All of it. Fewer moving parts you understand beats
+   more you inherited.
+
+> **Exit:** the Console is clean and the EditMode tests run.
+
 ## M0 — It moves and it shoots
 
 **Days 1–3 · ~9 hours**
@@ -127,10 +145,11 @@ At 12–15 hours a week:
 
 | Day | ~Hours | Goal |
 |---|---|---|
-| **1** | 2–3 | Open the project in Unity 6000.3.12f1. Install ProBuilder. Create `Sandbox.unity`, a 40×40m floor and a dozen cover boxes. Drop in a capsule with `CharacterController` + `ThirdPersonMotor` + `PlayerInputReader`. **WASD moves a capsule.** Commit. |
+| **0** | 2–4 | The compile gate above. Create from the URP template, move the code in, fix the Console, delete what v1 does not need. |
+| **1** | 2–3 | Create `Sandbox.unity`, a 40×40m ProBuilder floor and a dozen cover boxes. Drop in a capsule with `CharacterController` + `ThirdPersonMotor` + `PlayerInputReader`. **WASD moves a capsule.** Commit. |
 | **2** | 2–3 | Cinemachine 3: a follow camera and an aim camera, swapped on right mouse. A crosshair on a Canvas. Commit. |
 | **3** | 2–3 | The rifle mesh in the hand socket, a `WeaponDefinition` asset, `Weapon` wired to `PlayerController`. **Shooting a wall leaves a decal.** Commit. |
-| **4** | 2–3 | Read all thirteen existing scripts end to end. Add your own comments where you had to stop and think. This is not busywork — code you cannot explain costs 5× to debug later. |
+| **4** | 2–3 | Read every script that survived the deletion pass, end to end. Add your own comments where you had to stop and think. This is not busywork — code you cannot explain costs 5× to debug later, and none of it was written by you. |
 | **5** | 2–3 | Bake a NavMesh. One enemy prefab that walks a `PatrolRoute`. |
 | **6** | 2–3 | The enemy sees, chases and shoots you. You can kill it. |
 | **7** | 2–3 | Three hours on feel only: hitmarker, hit sound, impact particles, camera shake. Then show it to one person. |
