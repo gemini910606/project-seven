@@ -65,12 +65,48 @@ structurally checked, and committed.
 Expect errors on first import, and treat that as normal rather than as a
 disaster. The likely categories:
 
+- **A package that is newer than your editor.** This one is worth recognising
+  on sight, because the error points at Unity's own package source and looks
+  like Unity is broken:
+
+  ```
+  Library\PackageCache\com.unity.inputsystem@<hash>\...\InputSystemPluginControl.cs(47,25):
+  error CS0117: 'BuildTarget' does not contain a definition for 'ReservedCFE'
+  ```
+
+  Nothing is wrong with your project. `BuildTarget.ReservedCFE` is a value Unity
+  added to that enum in a later editor patch; the package was built against an
+  editor that has it and yours does not. **Any `CS0117`/`CS0246` pointing inside
+  `Library/PackageCache` means the same thing.**
+
+  Two fixes, either is fine:
+  - **Lower the package** in `Packages/manifest.json` by one minor version, then
+    delete `Library/PackageCache` and reopen. (Input System 1.20.0 needs editor
+    6000.3.21f1+; 1.19.0 covers the whole 6.3 line, which is why the manifest
+    pins 1.19.0.)
+  - **Raise the editor** to the newest 6.3 patch in Unity Hub.
+
+  The versions in `Packages/manifest.json` were chosen from Unity's docs, not by
+  opening the editor, so treat them as a starting point. If Package Manager
+  offers a different version, it knows better than the manifest does.
+
+- **`Cannot connect to 'download.packages.unity.com' (ECONNRESET)`.** Not a
+  project problem at all — Unity could not reach its package CDN. Retry first;
+  it is often transient. If it persists, check a VPN or corporate firewall, and
+  set `HTTP_PROXY`/`HTTPS_PROXY` if you are behind a proxy. If the package that
+  failed is `com.unity.ide.rider` and you do not use Rider, just delete that
+  line from `Packages/manifest.json` — the IDE integration packages are
+  convenience, not requirements, and nothing here needs them to compile.
+
+- **Missing packages** — anything referenced in `Game.Runtime.asmdef` that did
+  not install will fail the whole assembly, not just one file. So one failed
+  download can look like a hundred unrelated errors.
+
 - **Package API drift** — the Multiplayer Services SDK is young and moves.
   `SessionOptions`, `WithRelayNetwork()` and `JoinSessionByCodeAsync` are the
   calls to check first, against
   https://docs.unity.com/en-us/mps-sdk/create-session .
-- **Missing packages** — anything referenced in `Game.Runtime.asmdef` that did
-  not install will fail the whole assembly, not just one file.
+
 - **Ordinary mistakes** in code nobody has run.
 
 Then do the deletion pass. **Delete what you do not understand.** Code you
