@@ -1,0 +1,35 @@
+name: Round Rules
+
+# The match rules have no UnityEngine dependency, so they compile and run under
+# plain dotnet. That means the logic most likely to contain an embarrassing bug -
+# who wins a round, and when - is verified on every push, with no Unity licence
+# and no 20-minute editor import.
+#
+# unity-tests.yml runs the same test file again inside Unity, when a licence is
+# configured. This job is the one that will actually be green.
+on:
+  push:
+    paths:
+      - 'unity/Assets/Game/Scripts/Round/Rules/**'
+      - 'unity/Assets/Game/Tests/EditMode/MatchCoreTests.cs'
+      - 'tools/RulesTests/**'
+      - '.github/workflows/rules-tests.yml'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Match rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # Point at the .csproj, not the directory. A runner with a newer SDK on
+      # PATH resolves a bare directory argument differently and fails with
+      # MSB1003 before it ever looks at the tests.
+      - name: Test
+        run: dotnet test tools/RulesTests/RulesTests.csproj --logger "console;verbosity=normal"

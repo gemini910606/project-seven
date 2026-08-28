@@ -1,0 +1,65 @@
+name: Unity Tests
+
+# Runs the EditMode suite. These are the tests that pin the client half of the
+# contract with the backend, so a red run here means submissions are about to
+# start failing in production.
+#
+# SETUP, ONCE, BEFORE THIS WORKS:
+#   1. Follow https://game.ci/docs/github/activation to produce a .ulf licence
+#      file for a Unity Personal account.
+#   2. Paste its entire contents into a repository secret named UNITY_LICENSE.
+#   3. Add UNITY_EMAIL and UNITY_PASSWORD secrets for the same account.
+# Until then this workflow will fail on activation, which is expected and is why
+# it does not gate anything.
+# MANUAL-ONLY UNTIL A LICENCE EXISTS.
+# Without UNITY_LICENSE this job fails at activation in about five seconds, and
+# a check that is permanently red teaches you to ignore red checks - which is
+# far more expensive than not having this check at all.
+#
+# Once the three secrets below are set, add these triggers back:
+#
+#   push:
+#     paths: ['unity/**', '.github/workflows/unity-tests.yml']
+#   pull_request:
+#     paths: ['unity/**', '.github/workflows/unity-tests.yml']
+#
+# In the meantime, tools/RulesTests covers the logic worth covering and runs on
+# every push with no licence at all - see rules-tests.yml.
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: EditMode tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # The Library folder is expensive to rebuild (tens of minutes on a cold
+      # cache) and is the difference between a usable CI and one nobody waits for.
+      - uses: actions/cache@v4
+        with:
+          path: unity/Library
+          key: Library-${{ hashFiles('unity/Assets/**', 'unity/Packages/**', 'unity/ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      - uses: game-ci/unity-test-runner@v4
+        id: tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity
+          testMode: editmode
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: EditMode results
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ${{ steps.tests.outputs.artifactsPath }}

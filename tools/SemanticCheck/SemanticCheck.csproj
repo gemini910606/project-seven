@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Type-checks every runtime script against hand-written stand-ins for Unity,
+    Netcode and the Input System. See UnityStubs.cs for what this does and does
+    not prove.
+
+    Everything under Scripts/ is checked, including SessionLauncher.cs. Stubbing
+    the Multiplayer Services SDK looked like pure guesswork until a real editor
+    compiled that file against the actual SDK - which means the shapes it calls
+    are known good, and the stub only has to match them. SessionMenu.cs then
+    forced the question by depending on it.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <LangVersion>9</LangVersion>
+    <!-- Noise from stubs that declare fields nothing in the stub assigns. -->
+    <NoWarn>$(NoWarn);CS0108;CS0114;CS0067;CS0649;CS0169;CS0414;CS0660;CS0661;CS0282</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="UnityStubs.cs" />
+    <Compile Include="../../unity/Assets/Game/Scripts/**/*.cs" />
+  </ItemGroup>
+
+</Project>
