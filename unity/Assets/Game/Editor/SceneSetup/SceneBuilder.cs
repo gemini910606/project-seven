@@ -376,6 +376,9 @@ namespace Game.EditorTools
             BotBrain brain = root.AddComponent<BotBrain>();
             SetRef(brain, "weaponUser", weaponUser);
 
+            // Switches all of the above off on anything that is not the server.
+            root.AddComponent<BotServerAuthority>();
+
             SetAuthorityToServer(root.GetComponent<NetworkTransform>());
 
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, BotPrefabPath);

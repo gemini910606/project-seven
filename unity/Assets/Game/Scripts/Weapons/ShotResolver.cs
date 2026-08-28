@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using Game.Core;
 
@@ -35,6 +36,15 @@ namespace Game.Weapons
         public bool Resolve(GameObject shooter, WeaponDefinition definition, Vector3 origin, Vector3 direction)
         {
             if (definition == null) return false;
+
+            // Belt and braces. This is the single place a bullet changes anyone's
+            // health, and it is documented as server-only, but nothing enforced
+            // it - a bot's weapon calls straight in here rather than over an RPC,
+            // so any bot logic left running on a client used to damage that
+            // client's own copies. Offline (no NetworkManager listening) is still
+            // allowed, so a scene can be tested without hosting.
+            NetworkManager network = NetworkManager.Singleton;
+            if (network != null && network.IsListening && !network.IsServer) return false;
 
             if (!Physics.Raycast(origin, direction, out RaycastHit hit,
                     definition.Range, hitMask, QueryTriggerInteraction.Ignore))

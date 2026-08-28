@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 using Game.Round.Rules;
 
 namespace Game.Round
@@ -37,13 +38,25 @@ namespace Game.Round
 
             // A CharacterController overwrites transform writes on its next
             // internal update, so it has to be disabled across a teleport.
+            //
+            // A NavMeshAgent does exactly the same thing, and bots have one of
+            // those instead - so respawned bots used to be dragged back toward
+            // where they died. Re-enabling the agent also re-projects it onto the
+            // navmesh at its new position, which is what makes it path from the
+            // spawn rather than from wherever it thought it was.
             var controller = character.GetComponent<CharacterController>();
+            var agent = character.GetComponent<NavMeshAgent>();
+
             bool hadController = controller != null && controller.enabled;
+            bool hadAgent = agent != null && agent.enabled;
+
             if (hadController) controller.enabled = false;
+            if (hadAgent) agent.enabled = false;
 
             character.SetPositionAndRotation(point.position, point.rotation);
 
             if (hadController) controller.enabled = true;
+            if (hadAgent) agent.enabled = true;
         }
 
         /// <summary>Called at the start of each round so the round-robin restarts.</summary>
