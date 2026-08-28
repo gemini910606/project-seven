@@ -1,0 +1,35 @@
+name: Semantic check
+
+# Type-checks every runtime script without Unity.
+#
+# rules-tests.yml proves the match rules are CORRECT. This proves the rest of the
+# project is at least CONNECTED - that no call names a method that does not exist
+# and no argument list is the wrong shape. Those are the mistakes this project
+# keeps making, because most of it was written without an editor to answer back.
+#
+# It cannot prove the code compiles in Unity; tools/SemanticCheck/UnityStubs.cs
+# says exactly why.
+on:
+  push:
+    paths:
+      - 'unity/Assets/Game/Scripts/**'
+      - 'tools/SemanticCheck/**'
+      - '.github/workflows/semantic-check.yml'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Scripts type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # The .csproj, not the directory - a runner with a newer SDK on PATH
+      # resolves a bare directory argument differently and fails with MSB1003.
+      - name: Build
+        run: dotnet build tools/SemanticCheck/SemanticCheck.csproj --nologo

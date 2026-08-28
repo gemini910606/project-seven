@@ -16,10 +16,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # No WebGL. docs/SETUP.md says why, and the technical half of the
+        # reason is that WebGL has no UDP - Relay would have to fall back to
+        # WebSockets, which is the transport this project deliberately left
+        # behind. Building it would produce an artifact that cannot connect.
         targetPlatform:
           - StandaloneWindows64
           - StandaloneLinux64
-          - WebGL
 
     steps:
       - uses: actions/checkout@v4

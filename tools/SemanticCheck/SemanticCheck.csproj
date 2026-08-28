@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Type-checks every runtime script against hand-written stand-ins for Unity,
+    Netcode and the Input System. See UnityStubs.cs for what this does and does
+    not prove.
+
+    SessionLauncher.cs is excluded: it is the one file whose external API surface
+    (the Multiplayer Services SDK) is large, young, and moves - stubbing it would
+    be pure guesswork, and a real editor has already compiled it.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <LangVersion>9</LangVersion>
+    <!-- Noise from stubs that declare fields nothing in the stub assigns. -->
+    <NoWarn>$(NoWarn);CS0108;CS0114;CS0067;CS0649;CS0169;CS0414;CS0660;CS0661;CS0282</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="UnityStubs.cs" />
+    <Compile Include="../../unity/Assets/Game/Scripts/**/*.cs"
+             Exclude="../../unity/Assets/Game/Scripts/Net/SessionLauncher.cs" />
+  </ItemGroup>
+
+</Project>
