@@ -62,6 +62,20 @@ tested - `dotnet test tools/RulesTests` builds those same files and runs 25
 tests against them. Everything else was written without an editor available,
 structurally checked, and committed.
 
+**Unity will offer you Safe Mode. Take it.** The dialog that says "The project
+you are opening contains compilation errors" is this gate, arriving on schedule.
+Safe Mode skips asset import and gives you the Console and a script editor, so a
+fix-and-recompile cycle is seconds instead of minutes; Unity leaves it by itself
+once the error count reaches zero. Choosing *Ignore* imports every asset on top
+of a broken compile state and buries the real errors under cascading ones.
+
+Work the errors in this order:
+
+1. **Anything under `Library/PackageCache` first.** A package that fails to
+   compile takes its whole assembly with it, so one bad package version can
+   produce a hundred unrelated-looking errors that vanish together.
+2. Then your own scripts, filtering the Console down to errors only.
+
 Expect errors on first import, and treat that as normal rather than as a
 disaster. The likely categories:
 
