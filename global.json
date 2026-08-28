@@ -1,0 +1,7 @@
+{
+  "//": "Pins the SDK so CI builds with the version these tests were written against. Without this, a runner with a newer SDK on PATH changes how `dotnet test` resolves its path argument, which is exactly how the first CI run failed.",
+  "sdk": {
+    "version": "8.0.100",
+    "rollForward": "latestFeature"
+  }
+}

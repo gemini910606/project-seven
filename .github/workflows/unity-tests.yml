@@ -11,15 +11,21 @@ name: Unity Tests
 #   3. Add UNITY_EMAIL and UNITY_PASSWORD secrets for the same account.
 # Until then this workflow will fail on activation, which is expected and is why
 # it does not gate anything.
+# MANUAL-ONLY UNTIL A LICENCE EXISTS.
+# Without UNITY_LICENSE this job fails at activation in about five seconds, and
+# a check that is permanently red teaches you to ignore red checks - which is
+# far more expensive than not having this check at all.
+#
+# Once the three secrets below are set, add these triggers back:
+#
+#   push:
+#     paths: ['unity/**', '.github/workflows/unity-tests.yml']
+#   pull_request:
+#     paths: ['unity/**', '.github/workflows/unity-tests.yml']
+#
+# In the meantime, tools/RulesTests covers the logic worth covering and runs on
+# every push with no licence at all - see rules-tests.yml.
 on:
-  push:
-    paths:
-      - 'unity/**'
-      - '.github/workflows/unity-tests.yml'
-  pull_request:
-    paths:
-      - 'unity/**'
-      - '.github/workflows/unity-tests.yml'
   workflow_dispatch:
 
 jobs:
