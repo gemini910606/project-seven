@@ -156,6 +156,16 @@ disaster. The likely categories:
 
 - **Ordinary mistakes** in code nobody has run.
 
+And one thing that looks alarming and is not:
+
+> `The following asset(s) located in immutable packages were unexpectedly
+> altered` naming ProBuilder's `.mat` files is a **warning, not an error**.
+> ProBuilder ships Built-in Render Pipeline materials; this project is URP, so
+> Unity's material upgrader rewrote them in place. Unity did that, not you.
+> Ignore it. The only consequence is that reinstalling or updating ProBuilder
+> reverts them and its geometry renders magenta until you re-run
+> `Edit > Rendering > Materials > Convert All Built-in Materials to URP`.
+
 Then do the deletion pass. **Delete what you do not understand.** Code you
 cannot explain costs about five times as much to debug later, and 800 lines you
 wrote beat 4,000 you inherited.
