@@ -28,9 +28,15 @@ namespace Game.Net
     ///     friends that is a social problem, not an engineering one, and it is
     ///     the reason this project has no anti-cheat and needs none.
     ///
-    /// API surface to re-verify against the docs when you first build this, as
-    /// the Multiplayer Services SDK is young and moves:
-    /// https://docs.unity.com/en-us/mps-sdk/create-session
+    /// Verified against the SDK docs: passing WithRelayNetwork() in the options
+    /// starts the netcode connection as part of creating or joining the session,
+    /// so nothing here calls NetworkManager.StartHost() and nothing should. From
+    /// SDK 1.2 you can omit it and call session.Network.Start...Async() later, if
+    /// this ever needs a lobby that exists before the match does.
+    /// https://docs.unity.com/en-us/mps-sdk/manage-session-network-connection
+    ///
+    /// The rest of the API surface is still worth re-checking on a version bump;
+    /// the SDK is young and moves.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class SessionLauncher : MonoBehaviour

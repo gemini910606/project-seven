@@ -5,9 +5,11 @@
     Netcode and the Input System. See UnityStubs.cs for what this does and does
     not prove.
 
-    SessionLauncher.cs is excluded: it is the one file whose external API surface
-    (the Multiplayer Services SDK) is large, young, and moves - stubbing it would
-    be pure guesswork, and a real editor has already compiled it.
+    Everything under Scripts/ is checked, including SessionLauncher.cs. Stubbing
+    the Multiplayer Services SDK looked like pure guesswork until a real editor
+    compiled that file against the actual SDK - which means the shapes it calls
+    are known good, and the stub only has to match them. SessionMenu.cs then
+    forced the question by depending on it.
   -->
 
   <PropertyGroup>
@@ -20,8 +22,7 @@
 
   <ItemGroup>
     <Compile Include="UnityStubs.cs" />
-    <Compile Include="../../unity/Assets/Game/Scripts/**/*.cs"
-             Exclude="../../unity/Assets/Game/Scripts/Net/SessionLauncher.cs" />
+    <Compile Include="../../unity/Assets/Game/Scripts/**/*.cs" />
   </ItemGroup>
 
 </Project>

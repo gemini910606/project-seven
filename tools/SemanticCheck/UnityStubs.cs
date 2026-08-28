@@ -134,6 +134,22 @@ namespace UnityEngine
     public struct Color { public Color(float r, float g, float b, float a = 1f) {} public static Color white, red, green, blue, yellow; }
     public static class Gizmos { public static Color color; public static Matrix4x4 matrix; public static void DrawWireSphere(Vector3 c, float r) {} public static void DrawLine(Vector3 a, Vector3 b) {} public static void DrawCube(Vector3 c, Vector3 s) {} public static void DrawWireCube(Vector3 c, Vector3 s) {} public static void DrawRay(Vector3 o, Vector3 d) {} }
     public struct Matrix4x4 {}
+
+    public struct Rect { public Rect(float x, float y, float w, float h) { this.x = x; this.y = y; width = w; height = h; } public float x, y, width, height; }
+    public static class Screen { public static int width, height; }
+    public class GUIStyle {}
+    public class GUISkin { public GUIStyle box, label, button, textField; }
+    public class GUILayoutOption {}
+    public static class GUI { public static bool enabled; public static GUISkin skin; }
+    public static class GUILayout {
+        public static void BeginArea(Rect r, GUIStyle s = null) {}
+        public static void EndArea() {}
+        public static void Label(string t, params GUILayoutOption[] o) {}
+        public static void Space(float p) {}
+        public static bool Button(string t, params GUILayoutOption[] o) => false;
+        public static string TextField(string t, int maxLength, params GUILayoutOption[] o) => t;
+        public static GUILayoutOption Height(float h) => null;
+        public static GUILayoutOption Width(float w) => null; }
     public enum CursorLockMode { None, Locked, Confined }
     public static class Cursor { public static CursorLockMode lockState; public static bool visible; }
 
@@ -194,7 +210,7 @@ namespace Unity.Netcode
     public class NetworkClient { public NetworkObject PlayerObject; }
     public class NetworkManager : MonoBehaviour { public static NetworkManager Singleton;
         public bool IsServer, IsClient, IsHost, IsListening; public ulong LocalClientId;
-        public IReadOnlyDictionary<ulong, NetworkClient> ConnectedClients; }
+        public IReadOnlyDictionary<ulong, NetworkClient> ConnectedClients; public void Shutdown(bool discardMessageQueue = false) {} }
 
     public class NetworkVariable<T> { public NetworkVariable() {} public NetworkVariable(T value) {} public T Value { get; set; }
         public event Action<T, T> OnValueChanged; }
@@ -211,3 +227,33 @@ namespace Unity.Netcode
 }
 
 namespace Unity.Netcode.Components { public class NetworkTransform : Unity.Netcode.NetworkBehaviour {} }
+
+// The Multiplayer Services SDK. These are the only members SessionLauncher uses.
+//
+// Unlike the rest of this file these are not written from memory alone: a real
+// Unity 6000.3.21f1 editor has compiled SessionLauncher.cs against the actual
+// SDK, so the shapes below are known to match at those call sites. They are
+// still only what that one file touches.
+namespace Unity.Services.Core
+{
+    using System.Threading.Tasks;
+    public enum ServicesInitializationState { Uninitialized, Initializing, Initialized }
+    public static class UnityServices { public static ServicesInitializationState State; public static Task InitializeAsync() => Task.CompletedTask; }
+}
+
+namespace Unity.Services.Authentication
+{
+    using System.Threading.Tasks;
+    public class AuthenticationService { public static AuthenticationService Instance; public bool IsSignedIn; public Task SignInAnonymouslyAsync() => Task.CompletedTask; public void SignOut() {} }
+}
+
+namespace Unity.Services.Multiplayer
+{
+    using System.Threading.Tasks;
+    public interface ISession { string Id { get; } string Code { get; } Task LeaveAsync(); }
+    public class SessionOptions { public int MaxPlayers { get; set; } public SessionOptions WithRelayNetwork() => this; }
+    public class MultiplayerService {
+        public static MultiplayerService Instance;
+        public Task<ISession> CreateSessionAsync(SessionOptions options) => Task.FromResult<ISession>(null);
+        public Task<ISession> JoinSessionByCodeAsync(string code) => Task.FromResult<ISession>(null); }
+}

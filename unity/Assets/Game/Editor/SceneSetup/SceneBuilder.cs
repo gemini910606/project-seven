@@ -144,6 +144,8 @@ namespace Game.EditorTools
             NetworkManager manager = netGo.AddComponent<NetworkManager>();
             UnityTransport transport = netGo.AddComponent<UnityTransport>();
             netGo.AddComponent<SessionLauncher>();
+            // Without this there is no way to reach Relay at all - see SessionMenu.
+            netGo.AddComponent<SessionMenu>();
 
             SetRef(manager, "NetworkConfig.PlayerPrefab", playerPrefab);
             SetRef(manager, "NetworkConfig.NetworkTransport", transport);

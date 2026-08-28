@@ -290,9 +290,14 @@ on the one machine that resolves every hit, and the host would be bulletproof.
 and *Start Client* - or install Unity's Multiplayer Play Mode package to get two
 players in one editor.
 
-**Over the internet**, `SessionLauncher.HostAsync()` returns a join code.
-Whoever hosts pastes it in Discord; everyone else calls `JoinAsync(code)`. Relay
-handles NAT traversal, so nobody forwards a port.
+**Over the internet**, press Play and use the on-screen panel: **Host** returns a
+six-character join code, and everyone else pastes it into **Join**. Relay handles
+NAT traversal, so nobody forwards a port and nobody sees anyone else's IP.
+
+That panel (`SessionMenu`) is deliberately IMGUI and deliberately ugly. It is the
+only route to Relay - NetworkManager's own *Start Host* button connects over the
+transport's configured address, which is localhost, so it works on one machine
+and silently cannot reach a friend.
 
 ### Tests
 
