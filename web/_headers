@@ -1,5 +1,22 @@
 # Cloudflare Pages headers.
 #
+# READ THIS BEFORE DEPLOYING A WEBGL BUILD:
+# Cloudflare Pages rejects any single file over 25 MiB (and 20,000 files per
+# deployment on the free plan). Unity WebGL emits ONE Build.data and ONE
+# Build.wasm, both of which pass 25 MiB for anything beyond a trivial scene, so a
+# naive `wrangler pages deploy` of a real build fails outright.
+#
+# The working layout is:
+#   - Pages hosts index.html and Build/*.loader.js only (small).
+#   - R2 (cdn.<your-domain>) hosts Build/*.data.br, *.wasm.br, *.framework.js.br,
+#     which costs $0 in egress and has no per-file limit worth worrying about.
+#   - Point the loader's config at the cdn URLs, and set the Content-Encoding
+#     headers below on the R2 objects instead (R2 stores them as object metadata,
+#     set with `wrangler r2 object put --content-encoding br`).
+#
+# The rules below still apply to whatever Build/* files remain on Pages, and are
+# the reference for what the R2 object metadata has to say.
+#
 # THE UNITY WEBGL GOTCHA, WRITTEN DOWN SO YOU ONLY LOSE AN EVENING TO IT ONCE:
 # Unity ships its WebGL build pre-compressed as .br (Brotli) or .gz (gzip) and
 # expects the server to hand those bytes over with a Content-Encoding header so
@@ -58,3 +75,8 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+# Separately, and more importantly than any header: a GTA-scale open world is not
+# a realistic WebGL target. Browsers cap out around 2-4 GB of heap and there is
+# no streaming install. Anything served here has to be a deliberately small
+# sliced-off scene - a shooting range, one building - not the game.

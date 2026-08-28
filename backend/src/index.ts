@@ -50,11 +50,24 @@ app.post('/v1/telemetry', async (c) => {
   return c.body(null, 204)
 })
 
-/** Opens a lobby socket. `name` addresses the room; anything can be a room name. */
+/**
+ * Opens a lobby socket. `name` addresses the room; anything can be a room name.
+ *
+ * The locationHint is not cosmetic and not optional. A Durable Object's physical
+ * datacenter is decided by the FIRST get() call for that id and never changes -
+ * there is no API to move one. Without a hint, a lobby whose first player
+ * happened to be in Frankfurt stays in Frankfurt for the life of the object, and
+ * every player in Taipei pays a ~250ms round trip forever.
+ *
+ * The region is also encoded into the object name, so a room created through a
+ * future EU-hinted route can never collide with this one.
+ */
+const LOBBY_REGION = 'apac-ne'
+
 app.get('/v1/lobby/:name', async (c) => {
   const name = str(c.req.param('name'), 'name', { max: 64 })
-  const id = c.env.LOBBY.idFromName(name)
-  return c.env.LOBBY.get(id).fetch(c.req.raw)
+  const id = c.env.LOBBY.idFromName(`${LOBBY_REGION}:${name}`)
+  return c.env.LOBBY.get(id, { locationHint: LOBBY_REGION }).fetch(c.req.raw)
 })
 
 app.notFound((c) => c.json({ error: { code: 'not_found', message: 'No such route' } }, 404))
