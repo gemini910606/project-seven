@@ -166,6 +166,13 @@ namespace Game.Player
 
         private void TickSpike()
         {
+            // The serialized field is a convenience for a hand-built scene. It is
+            // normally empty and has to be: this component lives on a prefab
+            // asset, and a prefab cannot reference a scene object - Unity drops
+            // the link without saying so. Falling back to the scene's spike is
+            // what actually makes planting work.
+            if (spike == null) spike = Spike.Instance;
+
             if (spike == null || !input.InteractHeld) return;
             if (Vector3.Distance(transform.position, spike.transform.position) > interactRange) return;
 

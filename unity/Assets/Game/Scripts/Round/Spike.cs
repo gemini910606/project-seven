@@ -34,10 +34,31 @@ namespace Game.Round
         private ulong _currentActorId;
         private bool _hadActorThisTick;
 
+        /// <summary>
+        /// The one spike in the scene.
+        ///
+        /// This exists because <see cref="Player.NetworkPlayer"/> lives on a prefab
+        /// asset, and a prefab cannot hold a reference to a scene object - Unity
+        /// silently drops it. So its serialized `spike` field is unassignable in
+        /// practice, and without a fallback every plant and defuse fails silently
+        /// forever. <see cref="Weapons.ShotResolver"/> already had the same problem
+        /// and the same answer.
+        /// </summary>
+        public static Spike Instance { get; private set; }
+
         public bool IsPlanted => _planted.Value;
 
         /// <summary>0..1 progress on the current plant or defuse, for the HUD.</summary>
         public float Progress => _progress.Value;
+
+        private void Awake() => Instance = this;
+
+        private void OnDestroy()
+        {
+            // Guarded: a second spike loading before this one is destroyed would
+            // otherwise null out the live reference on its way out.
+            if (Instance == this) Instance = null;
+        }
 
         /// <summary>
         /// Called every frame by a character that is holding the interact key
