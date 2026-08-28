@@ -22,39 +22,53 @@ One deployable: the Unity game. There is no backend any more — see
 - **Git LFS** (`git lfs install`) — the repo's `.gitattributes` routes binary art
   through it.
 
-### First open — do NOT use "Add project from disk"
+### First open
 
-`unity/ProjectSettings/` contains exactly one file, `ProjectVersion.txt`. There
-is no `GraphicsSettings.asset`, which means **URP is in the package manifest but
-is not the active render pipeline**. Opening this folder directly gives you a
-project where every material renders magenta, and you will spend an hour finding
-out why.
+The repo does not carry a complete Unity project. `unity/ProjectSettings/` holds
+only `ProjectVersion.txt`, so there is no `GraphicsSettings.asset` and URP is in
+the manifest without being the active pipeline. Open `unity/` directly and every
+material renders magenta.
 
-Create the project from Unity's own URP template instead, then move this repo's
-code into it:
+So the first job is to marry this repo's code to a real, working URP project.
 
-1. Unity Hub → **New project** → **Universal 3D** template → Unity **6000.3.x**.
-   Name it `unity`, create it somewhere temporary.
-2. From that new project, copy into this repo's `unity/` folder:
-   - the whole `ProjectSettings/` folder (this is the part that matters — it
-     carries `GraphicsSettings.asset` with URP wired up, plus quality settings),
-   - `Assets/Settings/` (the URP asset and renderer),
-   - `Packages/packages-lock.json`.
-3. Merge this repo's `Packages/manifest.json` into the template's — or add the
-   packages through Package Manager: **Netcode for GameObjects**, **Multiplayer
-   Services**, **Authentication**, **Input System**, **AI Navigation**,
-   **ProBuilder**. The first three are what make it a multiplayer game; the last
-   one you need on day one for greyboxing.
-4. **Delete `Assets/TutorialInfo/` from the template.** It is the URP template's
-   welcome screen and its only script, `Readme.cs`, is in the global namespace.
-   If a copy of it survives in two places after step 2 you get
-   `CS0101: already contains a definition for 'Readme'`, which looks like a
-   problem with this project and is not. Nothing depends on it. Delete it.
-5. Open `unity/`. Let it import. The first import takes a while.
-6. **Read the Console.** See the compile gate below.
-7. Run **Game → Bootstrap Project** from the menu bar. This creates the tags,
-   layers and collision-matrix entries the scripts expect. It is safe to run
-   repeatedly and it tells you what it changed.
+**1. Create the URP project.** Unity Hub -> New project -> **Universal 3D** ->
+Unity 6000.3.x. Put it anywhere; it is temporary scaffolding.
+
+**2. Delete `Assets/TutorialInfo/` from it.** That folder is the template's
+welcome screen and its only script, `Readme.cs`, sits in the global namespace. It
+is the single most common source of `CS0101: already contains a definition for
+'Readme'` later on. Nothing depends on it.
+
+**3. Clone this repo** somewhere separate:
+
+```
+git clone -b <branch> <repo-url> seven
+```
+
+**4. Move the working project into `seven/unity/`.** This direction matters: the
+git repo becomes the Unity project, so your scene and prefab work is version
+controlled from the first day rather than sitting in an untracked folder.
+
+```
+robocopy "<template-project>" "seven\unity" /E /XD Library Temp Logs /XF *.csproj *.sln *.slnx
+cd seven
+git checkout -- unity/Packages/manifest.json
+```
+
+`robocopy` exits with code 1 on success, which looks like a failure and is not.
+
+The `git checkout` at the end is the step people miss: the copy overwrites this
+repo's `Packages/manifest.json` with the template's, which does not list Netcode
+for GameObjects, Multiplayer Services or ProBuilder. Restoring it puts them back.
+
+**5. Add `seven/unity` to Unity Hub** and open it. Let it import; the first one
+takes a while.
+
+**6. Read the Console.** See the compile gate below.
+
+**7. Run `Game > Bootstrap Project`** from the menu bar once it compiles. It
+creates the tags, layers and collision-matrix entries the scripts expect, is safe
+to run repeatedly, and tells you what it changed.
 
 > **Input System note:** when Unity asks whether to enable the new Input System
 > backend, say yes and let it restart. `PlayerInputReader` builds its actions in
