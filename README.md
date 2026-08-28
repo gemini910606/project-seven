@@ -13,21 +13,33 @@ matchmaking, no anti-cheat.
 
 | Part | Status |
 |---|---|
-| **Match rules** (`Round/Rules/`) | **Compiled and tested.** 25 tests pass under plain dotnet. Mutation-checked: injecting the classic post-plant bug turns 2 of them red. |
-| Everything else in `unity/` | **Never compiled.** No `.meta` files exist, so no Unity editor has ever imported this project. |
+| **Match rules** (`Round/Rules/`) | **Compiled and tested.** 25 tests under plain dotnet. Mutation-checked: injecting the classic post-plant bug turns 2 of them red. |
+| **Every runtime script** | **Type-checked on CI** against hand-written Unity stubs. |
+| **`Game.Runtime` + `Game.Editor`** | **Compiled by a real editor** — Unity 6000.3.21f1 imported the project and the `Game` menu appeared. |
+| **All behaviour** | **Never run.** Nobody has played this. |
 
-That split is deliberate. The match rules have no `UnityEngine` dependency at
-all, so `tools/RulesTests` builds the *same source files* with `dotnet test` —
-no editor, no licence, no 20-minute import. Round logic is where a shooter's
-most embarrassing bugs live, so it is the part worth proving.
+Two gates, worth different things:
 
 ```bash
-dotnet test tools/RulesTests     # 25 tests, ~40ms
+dotnet test  tools/RulesTests      # 25 tests, ~40ms  - the rules are CORRECT
+dotnet build tools/SemanticCheck   # ~3s              - everything else is CONNECTED
 ```
 
-The rest is a starting point that is probably close. **Day 0 is a compile gate**
-— see [`docs/ROADMAP.md`](docs/ROADMAP.md). Expect errors, fix them, and delete
-anything you do not understand.
+The first builds `Round/Rules/` outside Unity — those files have no
+`UnityEngine` dependency at all, so `dotnet test` runs the *same source*. Round
+logic is where a shooter's most embarrassing bugs live, so it is the part worth
+proving.
+
+The second compiles every runtime script against stand-ins for Unity, Netcode
+and the Input System. It catches a method called by a name it does not have, or
+an argument list of the wrong shape — which is this project's entire bug
+pattern. It **cannot** prove the code compiles in Unity; the stubs are written
+from memory and are wrong in places. `tools/SemanticCheck/UnityStubs.cs` says so
+at the top.
+
+Nineteen bugs have been found by reading this code after it compiled, and not
+one of them produced an error in the Console. **Compiling is not working** — see
+the pull request for the list, grouped by the shapes they take.
 
 ---
 
@@ -39,6 +51,10 @@ project than the open world this started as.
 
 The roadmap's first real milestone is *two windows, one world*. Get two machines
 talking in week one; multiplayer is not something you add at the end.
+
+Two menu items build the project — `Game > Bootstrap Project`, then
+`Game > Build Playable Scene` — and the Host / Join panel appears when you press
+Play. [`docs/SETUP.md`](docs/SETUP.md) has the whole path.
 
 > **Cloning this?** The branch name still says `gta5-style-open-world-shooter`
 > from before the pivot. The game is not that any more; the branch was left
@@ -58,7 +74,8 @@ unity/
     Bots/           perception, locomotion, brain, bot director
     Core/           health, damage, teams, combatant registry
     Net/            Relay session hosting and joining
-tools/RulesTests/   dotnet test project compiling the rules outside Unity
+tools/RulesTests/     dotnet test project compiling the rules outside Unity
+tools/SemanticCheck/  type-checks every script against Unity stubs, no editor
 web/                a page with a download link. That is all it needs to be.
 docs/
 ```
