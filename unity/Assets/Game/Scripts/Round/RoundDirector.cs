@@ -119,6 +119,36 @@ namespace Game.Round
         // Registration - characters tell the director they exist
         // ------------------------------------------------------------------
 
+        /// <summary>
+        /// Puts a newly connected player on the smaller human team. Server-side.
+        ///
+        /// Nothing did this before. TeamMember defaults to MatchTeam.A on the
+        /// prefab and only BotDirector ever called Assign, so every human landed
+        /// on team A - and IsHostileTo is false between teammates, so four friends
+        /// could stand in front of each other all match and never trade a shot.
+        ///
+        /// Bots are ignored in the count on purpose: BotDirector fills whatever is
+        /// left after the humans have been dealt, so counting them here would make
+        /// the two systems argue.
+        /// </summary>
+        public void AssignTeam(TeamMember member)
+        {
+            if (!IsServer || member == null) return;
+
+            int onA = 0;
+            int onB = 0;
+
+            foreach (TeamMember other in Combatants.Everyone)
+            {
+                if (other == null || other == member || other.IsBot) continue;
+
+                if (other.Team == MatchTeam.A) onA++;
+                else if (other.Team == MatchTeam.B) onB++;
+            }
+
+            member.Assign(onA <= onB ? MatchTeam.A : MatchTeam.B, bot: false);
+        }
+
         /// <summary>Called by players and bots on spawn. Server-side only.</summary>
         public void Register(Health health)
         {

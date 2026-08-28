@@ -87,6 +87,9 @@ namespace Game.Player
 
             if (IsServer)
             {
+                // Before Register, so the first RecountLiving already sees a side.
+                if (TryGetComponent(out TeamMember member)) director?.AssignTeam(member);
+
                 RoundDirector.Instance?.Register(_health);
                 if (shotResolver == null) shotResolver = FindFirstObjectByType<ShotResolver>();
             }
