@@ -1,0 +1,131 @@
+using UnityEditor;
+using UnityEngine;
+
+namespace Game.EditorTools
+{
+    /// <summary>
+    /// One-shot project setup.
+    ///
+    /// Tags, layers and the collision matrix are stored in ProjectSettings YAML,
+    /// which merges badly and is easy to get subtly wrong by hand. Doing it in
+    /// code means the setup is reviewable, repeatable, and documents why each
+    /// layer exists.
+    ///
+    /// Run once from Game > Bootstrap Project after creating the project.
+    /// </summary>
+    public static class ProjectBootstrap
+    {
+        private static readonly string[] RequiredTags =
+        {
+            "Player",
+            "Enemy",
+            "Collectible",
+            "ExtractionZone",
+        };
+
+        /// <summary>
+        /// Layer names in the order they are assigned, starting at 8 (0-7 are
+        /// Unity's built-ins and cannot be renamed).
+        /// </summary>
+        private static readonly string[] RequiredLayers =
+        {
+            "Player",       // 8  - the player capsule
+            "Enemy",        // 9  - enemy bodies
+            "WeakPoint",    // 10 - head colliders; Weapon treats hits here as critical
+            "Environment",  // 11 - static world geometry, blocks sight and bullets
+            "Interactable", // 12 - doors, pickups
+            "Projectile",   // 13 - reserved for when hitscan is not enough
+        };
+
+        [MenuItem("Game/Bootstrap Project", priority = 0)]
+        public static void Bootstrap()
+        {
+            int tagsAdded = EnsureTags();
+            int layersAdded = EnsureLayers();
+            ConfigureCollisionMatrix();
+
+            AssetDatabase.SaveAssets();
+
+            Debug.Log(
+                $"Project bootstrap complete. Added {tagsAdded} tag(s) and {layersAdded} layer(s), " +
+                "and configured the collision matrix. Safe to run again.");
+        }
+
+        private static int EnsureTags()
+        {
+            SerializedObject tagManager = OpenTagManager();
+            SerializedProperty tags = tagManager.FindProperty("tags");
+            int added = 0;
+
+            foreach (string tag in RequiredTags)
+            {
+                if (HasStringValue(tags, tag)) continue;
+
+                tags.InsertArrayElementAtIndex(tags.arraySize);
+                tags.GetArrayElementAtIndex(tags.arraySize - 1).stringValue = tag;
+                added++;
+            }
+
+            tagManager.ApplyModifiedProperties();
+            return added;
+        }
+
+        private static int EnsureLayers()
+        {
+            SerializedObject tagManager = OpenTagManager();
+            SerializedProperty layers = tagManager.FindProperty("layers");
+            int added = 0;
+
+            foreach (string layer in RequiredLayers)
+            {
+                if (HasStringValue(layers, layer)) continue;
+
+                bool placed = false;
+                // Index 0-7 are Unity's built-in layers and must not be touched.
+                for (int i = 8; i < layers.arraySize; i++)
+                {
+                    SerializedProperty slot = layers.GetArrayElementAtIndex(i);
+                    if (!string.IsNullOrEmpty(slot.stringValue)) continue;
+
+                    slot.stringValue = layer;
+                    added++;
+                    placed = true;
+                    break;
+                }
+
+                if (!placed) Debug.LogWarning($"No free layer slot for '{layer}'. Free one by hand in Project Settings.");
+            }
+
+            tagManager.ApplyModifiedProperties();
+            return added;
+        }
+
+        private static void ConfigureCollisionMatrix()
+        {
+            int player = LayerMask.NameToLayer("Player");
+            int enemy = LayerMask.NameToLayer("Enemy");
+            int weakPoint = LayerMask.NameToLayer("WeakPoint");
+
+            if (player < 0 || enemy < 0 || weakPoint < 0) return;
+
+            // Weak points are hitboxes, not physical volumes. Letting them collide
+            // with characters makes enemies bump off each other's heads, which
+            // looks exactly as silly as it sounds.
+            Physics.IgnoreLayerCollision(weakPoint, player, true);
+            Physics.IgnoreLayerCollision(weakPoint, enemy, true);
+            Physics.IgnoreLayerCollision(weakPoint, weakPoint, true);
+        }
+
+        private static SerializedObject OpenTagManager() =>
+            new(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset")[0]);
+
+        private static bool HasStringValue(SerializedProperty array, string value)
+        {
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                if (array.GetArrayElementAtIndex(i).stringValue == value) return true;
+            }
+            return false;
+        }
+    }
+}
