@@ -133,6 +133,13 @@ namespace Game.Bots
             weapon.Tick(triggerHeld, true, 0f, origin, direction);
         }
 
+        /// <summary>Fresh magazine at the round boundary, with no reload left pending.</summary>
+        public void ResetForRound()
+        {
+            CancelInvoke(nameof(FinishReload));
+            if (weapon != null) weapon.ResetForRound();
+        }
+
         public void HoldFire()
         {
             _currentTarget = null;

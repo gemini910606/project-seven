@@ -60,6 +60,15 @@ namespace Game.Player
             Equip((_index + 1) % weapons.Count);
         }
 
+        /// <summary>Refills everything this character carries, at the round boundary.</summary>
+        public void ResetForRound()
+        {
+            foreach (Weapon weapon in weapons)
+            {
+                if (weapon != null) weapon.ResetForRound();
+            }
+        }
+
         /// <summary>Adds a weapon at runtime, e.g. one picked up off the ground.</summary>
         public void AddWeapon(Weapon weapon, bool equipImmediately = true)
         {

@@ -76,6 +76,15 @@ namespace Game.Player
                 Cursor.visible = false;
             }
 
+            if (owner && input != null) input.ReloadPressed += OnReloadPressed;
+
+            // Ammo lives on the owning machine, so the round refill has to happen
+            // there. RoundDirector raises RoundStarted on every machine through a
+            // ClientRpc for exactly this kind of thing.
+            RoundDirector director = RoundDirector.Instance;
+            if (director != null) director.RoundStarted += OnRoundStarted;
+            else if (owner) Debug.LogWarning($"{name}: no RoundDirector, so ammo will not refill between rounds.", this);
+
             if (IsServer)
             {
                 RoundDirector.Instance?.Register(_health);
@@ -86,7 +95,43 @@ namespace Game.Player
         public override void OnNetworkDespawn()
         {
             if (IsServer) RoundDirector.Instance?.Unregister(_health);
+
+            if (input != null) input.ReloadPressed -= OnReloadPressed;
+            if (RoundDirector.Instance != null) RoundDirector.Instance.RoundStarted -= OnRoundStarted;
+
             Unsubscribe();
+        }
+
+        private void OnRoundStarted(int roundNumber)
+        {
+            CancelInvoke(nameof(FinishReload));
+            if (weapons != null) weapons.ResetForRound();
+        }
+
+        /// <summary>
+        /// The owner runs its own reload timer. Weapon deliberately does not run
+        /// one: a bot finishes on an Invoke because it has no animation to sync
+        /// with, and a player eventually will have.
+        ///
+        /// Nothing was subscribed to ReloadPressed at all before this, so the
+        /// binding existed, the bots reloaded, and a player who emptied a
+        /// magazine kept a dead gun for the rest of the match.
+        /// </summary>
+        private void OnReloadPressed()
+        {
+            if (!IsOwner || !_health.IsAlive) return;
+
+            Weapon weapon = weapons != null ? weapons.Current : null;
+            if (weapon == null || !weapon.CanReload) return;
+
+            float seconds = weapon.BeginReload();
+            if (seconds > 0f) Invoke(nameof(FinishReload), seconds);
+        }
+
+        private void FinishReload()
+        {
+            Weapon weapon = weapons != null ? weapons.Current : null;
+            if (weapon != null) weapon.FinishReload();
         }
 
         private void OnDisable() => Unsubscribe();

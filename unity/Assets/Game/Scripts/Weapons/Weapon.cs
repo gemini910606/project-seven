@@ -187,6 +187,30 @@ namespace Game.Weapons
 
         public void CancelReload() => IsReloading = false;
 
+        /// <summary>
+        /// Full magazine, full reserve, nothing in progress.
+        ///
+        /// Called at the start of every round. Nothing else refills ammo - there
+        /// is no buy phase and there are no pickups - so without this you carry
+        /// whatever you had left into every remaining round and the match ends
+        /// with everyone dry.
+        /// </summary>
+        public void ResetForRound()
+        {
+            CancelReload();
+
+            MagazineAmmo = definition != null ? definition.MagazineSize : 0;
+            ReserveAmmo = definition != null ? definition.StartingReserve : 0;
+
+            _burstRemaining = 0;
+            _nextShotTime = 0f;
+            _triggerHeldLastFrame = false;
+            _spread.Reset();
+            _recoil.Reset();
+
+            AmmoChanged?.Invoke();
+        }
+
         public void AddReserveAmmo(int rounds)
         {
             if (rounds <= 0) return;

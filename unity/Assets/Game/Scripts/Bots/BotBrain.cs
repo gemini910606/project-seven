@@ -340,6 +340,7 @@ namespace Game.Bots
         {
             _state = BotState.Idle;
             _perception.SetTarget(null);
+            if (weaponUser != null) weaponUser.ResetForRound();
             enabled = true;
         }
 
