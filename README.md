@@ -40,12 +40,9 @@ project than the open world this started as.
 The roadmap's first real milestone is *two windows, one world*. Get two machines
 talking in week one; multiplayer is not something you add at the end.
 
-> **The canonical name is Project Seven** — repo, folder, domain and build
-> identifier. If the repository is still called `GTA7`, rename it in
-> **Settings > General > Repository name**: it is not a GTA clone any more, and
-> "GTA" is a Take-Two trademark. GitHub redirects the old URL, so existing
-> clones and this PR keep working, but update your remote anyway:
-> `git remote set-url origin https://github.com/<owner>/project-seven.git`
+> **Cloning this?** The branch name still says `gta5-style-open-world-shooter`
+> from before the pivot. The game is not that any more; the branch was left
+> alone because renaming it would mean reopening the pull request.
 
 ---
 
