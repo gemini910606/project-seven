@@ -32,8 +32,18 @@ namespace Game.EditorTools
             // Players and bots share one layer on purpose: nothing about hit
             // resolution should care which one it is shooting at. Team identity
             // lives on the TeamMember component, not in the physics layers.
-            "Character",    // 8  - player and bot bodies
-            "WeakPoint",    // 9  - head colliders; ShotResolver treats hits here as critical
+            //
+            // Character and WeakPoint are HITBOX layers - volumes that exist to be
+            // shot at and nothing else. They collide with nothing at all. What
+            // stops a character walking through a wall is its CharacterController,
+            // which sits on the root object on Ignore Raycast.
+            //
+            // That split is what makes headshots possible. One capsule wrapping the
+            // whole body is both the movement volume and the outermost surface, so
+            // a head collider inside it can never be the nearest hit and headshots
+            // silently never register.
+            "Character",    // 8  - body hitboxes
+            "WeakPoint",    // 9  - head hitboxes; ShotResolver treats hits here as critical
             "Environment",  // 10 - static geometry, blocks sight and bullets
             "Interactable", // 11 - the spike, doors
         };
@@ -130,11 +140,17 @@ namespace Game.EditorTools
 
             if (character < 0 || weakPoint < 0) return;
 
-            // Weak points are hitboxes, not physical volumes. Letting them collide
-            // with characters makes players bump off each other's heads, which
-            // looks exactly as silly as it sounds.
-            Physics.IgnoreLayerCollision(weakPoint, character, true);
-            Physics.IgnoreLayerCollision(weakPoint, weakPoint, true);
+            // Hitboxes are things to shoot at, not physical volumes. Left colliding,
+            // they push characters off each other's heads and snag on the world -
+            // and the movement they interfere with is already handled by the
+            // CharacterController on the root object, which is on Ignore Raycast.
+            //
+            // So: both hitbox layers collide with nothing, including each other.
+            for (int other = 0; other < 32; other++)
+            {
+                Physics.IgnoreLayerCollision(character, other, true);
+                Physics.IgnoreLayerCollision(weakPoint, other, true);
+            }
         }
 
         private static SerializedObject OpenTagManager() =>

@@ -1,0 +1,19 @@
+{
+  "name": "Game.Editor.SceneSetup",
+  "rootNamespace": "Game.EditorTools",
+  "references": [
+    "Game.Runtime",
+    "Unity.Netcode.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

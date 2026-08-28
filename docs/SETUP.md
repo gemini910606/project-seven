@@ -86,6 +86,9 @@ It also runs headless, which is the fastest way to re-run it after a code change
 
 Only one process can hold the project lock, so close the editor first.
 
+**8. Run `Game > Build Playable Scene`.** It writes the scene and both prefabs.
+See below for what it makes and the two things it cannot do for you.
+
 > **Input System note:** when Unity asks whether to enable the new Input System
 > backend, say yes and let it restart. `PlayerInputReader` builds its actions in
 > code and will not work under the old backend.
@@ -213,31 +216,65 @@ wrote beat 4,000 you inherited.
 > you need in the scene to bake, which is why it is in the manifest without
 > being in the asmdef.
 
-### Wire up a playable scene
+### Build the playable scene
 
-Nothing here ships a scene - `.unity` files are YAML that is painful to review
-and impossible to merge. Build one:
+**`Game > Build Playable Scene`.** One menu item; it writes:
 
-1. **NetworkManager**: one GameObject with `NetworkManager` + `UnityTransport`.
-   Assign the player prefab.
-2. **Player prefab**: `CharacterController`, `NetworkObject`,
-   `NetworkTransform`, `FirstPersonMotor`, `PlayerLook`, `PlayerInputReader`,
-   `NetworkPlayer`, `Health`, `TeamMember`, `CombatantRegistration`,
-   `WeaponHolder`. A `CameraPivot` child at eye height holds the camera; put it
-   in `NetworkPlayer.localOnly` so only the owner sees through it, and the body
-   mesh in `remoteOnly`.
-3. **Weapon**: the rifle under the hand socket, with `Weapon` pointing at a
-   `WeaponDefinition` asset. One `ShotResolver` in the scene.
-4. **Round**: one GameObject with `NetworkObject`, `RoundDirector`,
-   `TeamSpawns`, `BotDirector` and `NoiseSystem`. A `Spike` with a
-   `NetworkObject`, and a `BombSite` per site.
-5. **Spawns**: empty transforms parented under `TeamSpawns`, five per side.
-   These are keyed by SIDE, not team - the teams swap between them at halftime.
-6. **Bot prefab**: like the player prefab, minus input and camera, plus
-   `NavMeshAgent`, `BotLocomotion`, `BotPerception`, `BotBrain`,
-   `BotWeaponUser`. Bake a NavMesh.
+```
+Assets/Game/Scenes/Match.unity
+Assets/Game/Prefabs/Player.prefab
+Assets/Game/Prefabs/Bot.prefab
+Assets/Game/Data/Weapon_Rifle.asset
+```
 
-[`ARCHITECTURE.md`](ARCHITECTURE.md) explains why the pieces split this way.
+The scene has a NetworkManager with UnityTransport and the player prefab
+assigned, a ShotResolver, a NoiseSystem, the round systems on one spawned
+NetworkObject, a spike, two bomb sites, five spawns a side, and enough greybox
+to have somewhere to stand and something to hide behind.
+
+This used to be a checklist of about sixty inspector drags, and every entry
+under *Common first-run problems* below is one missed drag. A checklist that
+long is not a setup step, it is a bug generator - so it is code now, in
+`Assets/Game/Editor/SceneSetup/SceneBuilder.cs`, where the wiring shows up in a
+diff and cannot be half-finished. Run it again any time; it overwrites.
+
+Anything it could not wire automatically is listed in the dialog at the end
+rather than left silently wrong.
+
+Two things it cannot do for you:
+
+1. **Bake a NavMesh** — `Window > AI > Navigation`, Bake. Without one the bots
+   stand still.
+2. **Confirm `Bot.prefab` is a registered network prefab.** Netcode normally
+   adds new `NetworkObject` prefabs to `DefaultNetworkPrefabs.asset` by itself,
+   but that is a setting, and spawning an unregistered prefab throws.
+
+#### How a character is put together, and why
+
+Worth understanding before you change it, because the layout is not the obvious
+one:
+
+```
+Player                 layer: Ignore Raycast   CharacterController, Health, TeamMember
+├─ Body                layer: Character        CapsuleCollider  <- body hitbox
+│  └─ Mesh             layer: Ignore Raycast   visual only, no collider
+├─ Head                layer: WeakPoint        SphereCollider   <- head hitbox
+└─ CameraPivot         (owner only)            Camera, AudioListener, weapon
+```
+
+**The movement volume and the hit volumes are different objects.** The
+CharacterController wraps the whole body, so it is always the outermost surface
+- a head collider placed inside it can never be the nearest hit, and headshots
+would silently never register. Splitting them costs one layer and fixes it
+outright. `Character` and `WeakPoint` are therefore hitbox-only layers that
+collide with nothing; `Game > Bootstrap Project` sets that matrix up.
+
+**The Mesh is hidden from the owner, not the Body.** `NetworkPlayer.remoteOnly`
+does `SetActive(!owner)`, and on a host the host's own player *is* the owner -
+so hiding the object that carries the hitbox would switch the host's hitbox off
+on the one machine that resolves every hit, and the host would be bulletproof.
+
+[`ARCHITECTURE.md`](ARCHITECTURE.md) explains why the components split this way.
 
 ### Playing it
 
@@ -272,6 +309,10 @@ version is Email Routing, and R2 behind `dl.your-domain` for the build.
 ---
 
 ## Common first-run problems
+
+Most of these are what a hand-wired scene gets wrong, and `Game > Build Playable
+Scene` prevents them. They are kept because you will edit that scene by hand
+eventually, and then they come back.
 
 **Everything is magenta.** Imported materials are Built-in, the project is URP.
 `Edit → Rendering → Materials → Convert All Built-in Materials to URP`.
