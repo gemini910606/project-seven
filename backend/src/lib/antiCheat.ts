@@ -31,8 +31,18 @@ export const LIMITS = {
   maxDurationMs: 2 * 60 * 60 * 1000,
   /** Highest points a single kill can be worth, including every multiplier. */
   maxScorePerKill: 500,
-  /** Flat bonus ceiling for objectives, so a 0-kill stealth run still scores. */
-  maxObjectiveScore: 5_000,
+  /**
+   * Flat ceiling for everything that is not a per-kill payout: objectives, the
+   * extraction bonus, the speed bonus and the marksman bonus combined.
+   *
+   * This MUST stay at or above ScoreCalculator.TheoreticalMax(0, n) in the Unity
+   * client for the largest objective count any mission ships with. The vertical
+   * slice tops out at 4 objectives = 4*750 + 1000 + 1500 + 750 = 6250, so 8000
+   * leaves room for one more objective before this has to move. Set it too low
+   * and perfect legitimate runs get flagged and silently vanish from the board,
+   * which is indistinguishable from the backend being broken.
+   */
+  maxObjectiveScore: 8_000,
   /** No weapon in the game can fire faster than this sustained. */
   maxShotsPerSecond: 20,
   /** More kills than this per minute is not reachable with the current spawner. */

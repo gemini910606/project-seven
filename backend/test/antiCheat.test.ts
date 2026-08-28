@@ -95,3 +95,47 @@ describe('flagRun', () => {
     expect(flagRun(honestRun({ peakAlert: 9 }))).toContain('alert_out_of_range')
   })
 })
+
+/**
+ * These pin the contract with ScoreCalculator.cs in the Unity client. The two
+ * sides compute scores independently, so nothing but a test stops them drifting
+ * apart until a player's perfect run silently fails to rank.
+ *
+ * Client constants, mirrored:
+ *   PointsPerKill 100, max AlertMultiplier 2.0  -> 200 per kill
+ *   PointsPerObjective 750
+ *   ExtractionBonus 1000 + MaxSpeedBonus 1500 + MaxMarksmanBonus 750 = 3250 flat
+ */
+describe('score ceiling agrees with the client ScoreCalculator', () => {
+  const CLIENT = {
+    maxPerKill: 100 * 2.0,
+    perObjective: 750,
+    flatBonuses: 1000 + 1500 + 750,
+    maxObjectivesPerMission: 4,
+  }
+
+  it('leaves headroom over the client per-kill payout', () => {
+    expect(CLIENT.maxPerKill).toBeLessThanOrEqual(LIMITS.maxScorePerKill)
+  })
+
+  it('covers a perfect run on the largest mission without flagging it', () => {
+    const clientMax =
+      CLIENT.maxObjectivesPerMission * CLIENT.perObjective + CLIENT.flatBonuses
+    expect(clientMax).toBeLessThanOrEqual(LIMITS.maxObjectiveScore)
+  })
+
+  it('does not flag a flawless 4-objective extraction', () => {
+    const kills = 20
+    const perfect: RunFacts = {
+      score: kills * CLIENT.maxPerKill + CLIENT.maxObjectivesPerMission * CLIENT.perObjective + CLIENT.flatBonuses,
+      durationMs: 3 * 60 * 1000,
+      kills,
+      shotsFired: 120,
+      shotsHit: 80,
+      damageTaken: 0,
+      peakAlert: 5,
+      outcome: 'extracted',
+    }
+    expect(flagRun(perfect)).toEqual([])
+  })
+})
