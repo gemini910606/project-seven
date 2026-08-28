@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Compiles the match rules and their tests OUTSIDE Unity.
+
+    The point is that unity/Assets/Game/Scripts/Round/Rules/ has no UnityEngine
+    dependency at all, so the same source files build here and run under plain
+    dotnet. That turns the round logic - which is where a shooter's most
+    embarrassing bugs live - from "believed to work" into "known to work",
+    without needing a Unity licence or an editor.
+
+    The test file is shared too: it uses NUnit, which is what Unity's Test
+    Runner uses, so MatchCoreTests.cs runs in both places unmodified.
+
+    Run with:  dotnet test tools/RulesTests
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Game.Tests</RootNamespace>
+    <!-- No implicit file globbing: every file is listed on purpose below. -->
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../unity/Assets/Game/Scripts/Round/Rules/**/*.cs" />
+    <Compile Include="../../unity/Assets/Game/Tests/EditMode/MatchCoreTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+</Project>

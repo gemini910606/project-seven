@@ -21,6 +21,14 @@
 *.csproj
 *.unityproj
 *.sln
+
+# ...but tools/ holds a REAL, hand-written project that must be committed. The
+# blanket *.csproj rule above exists because Unity regenerates its own project
+# files on every import; it is not meant to swallow one we wrote. Without this
+# negation the file is silently absent from a fresh clone and CI fails with
+# MSB1009 "Project file does not exist" - which looks nothing like a gitignore
+# problem, and cost a wrong diagnosis to find.
+!tools/**/*.csproj
 *.suo
 *.user
 *.userprefs
