@@ -47,6 +47,22 @@ namespace Game.EditorTools
 
             AssetDatabase.SaveAssets();
 
+            string summary = tagsAdded == 0 && layersAdded == 0
+                ? "Nothing to add - the tags and layers were already in place.\n\n" +
+                  "The collision matrix was reapplied anyway, which is harmless."
+                : $"Added {tagsAdded} tag(s) and {layersAdded} layer(s), and configured the " +
+                  "collision matrix.\n\nCheck them under Project Settings > Tags and Layers.";
+
+            // A dialog, not just a Debug.Log. This is a "did that work?" action, and
+            // its only feedback used to be an info-level log line - invisible the
+            // moment anyone filters the Console down to errors, which is exactly
+            // what you do while working through compile errors. Silence then reads
+            // as "the menu item is broken".
+            EditorUtility.DisplayDialog(
+                "Bootstrap Project",
+                summary + "\n\nSafe to run again at any time.",
+                "OK");
+
             Debug.Log(
                 $"Project bootstrap complete. Added {tagsAdded} tag(s) and {layersAdded} layer(s), " +
                 "and configured the collision matrix. Safe to run again.");
